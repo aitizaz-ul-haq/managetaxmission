@@ -1,0 +1,55 @@
+:root {
+  /* === Typography === */
+  --font-heading: var(--font-tilt-neon), 'Tilt Neon', cursive;
+  --font-body: 'TikTokSans', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* === Brand Palette === */
+  --color-primary: #4B4E6D;        /* Dark navy-purple */
+  --color-primary-dark: #393c56;   /* Deeper shade for hover */
+  --color-primary-light: #5d6082;  /* Lighter shade */
+  --color-accent: #FF6372;         /* Coral red – CTA / highlights */
+  --color-accent-dark: #e84f5e;    /* Deeper coral for hover */
+  --color-accent-bg: #fff0f1;      /* Soft coral tint */
+  --color-muted-purple: #B3B6CB;   /* Soft lavender – muted text, borders */
+
+  /* === Surfaces === */
+  --color-bg: #F0F0F0;             /* App background */
+  --color-surface: #FFFFFF;        /* Cards, panels */
+  --color-border: #dddde8;         /* Borders (derived) */
+  --color-border-light: #ebebf3;   /* Subtle dividers */
+
+  /* === Text === */
+  --color-text: #2a2c3e;           /* Primary text (dark navy-tinted) */
+  --color-muted: #7e819a;          /* Secondary text */
+  --color-on-primary: #ffffff;     /* Text on primary bg */
+
+  /* === Semantic === */
+  --color-success: #16803c;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #b7791f;
+  --color-warning-bg: #fffbeb;
+  --color-danger: #FF6372;         /* Coral doubles as danger */
+  --color-danger-bg: #fff0f1;
+  --color-info-bg: #eeeef6;        /* Tint of primary */
+
+  /* === Sidebar === */
+  --color-sidebar: #4B4E6D;
+  --color-sidebar-hover: rgba(255,255,255,0.1);
+  --color-sidebar-active: rgba(255,99,114,0.18);
+  --color-sidebar-active-border: #FF6372;
+
+  /* === Layout === */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 2px 8px rgba(75, 78, 109, 0.10);
+  --shadow-md: 0 4px 20px rgba(75, 78, 109, 0.16);
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+
+  /* === Typography === */
+  --font-sm: 0.8125rem;
+  --font-base: 0.9375rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.375rem;
+}

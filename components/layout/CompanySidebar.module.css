@@ -1,0 +1,112 @@
+.sidebar {
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  background: var(--color-sidebar);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.logo {
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 1px solid rgba(179, 182, 203, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.logoImg {
+  width: 150px;
+  height: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+.logoSub {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--color-muted-purple);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-body);
+  text-align: center;
+}
+
+.navList {
+  list-style: none;
+  padding: 0.75rem 0;
+  flex: 1;
+}
+
+.navLink {
+  display: block;
+  padding: 0.6rem 1.25rem 0.6rem 1.5rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.navLink:hover {
+  background: var(--color-sidebar-hover);
+  color: #fff;
+  border-left-color: var(--color-muted-purple);
+}
+
+.navLink.active {
+  background: var(--color-sidebar-active);
+  color: #fff;
+  font-weight: 700;
+  border-left-color: var(--color-accent);
+}
+
+.userSection {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(179, 182, 203, 0.2);
+}
+
+.userName {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userRole {
+  font-size: 0.7rem;
+  color: var(--color-muted-purple);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.logoutBtn {
+  background: rgba(255, 99, 114, 0.2);
+  color: #FF6372;
+  border: 1px solid rgba(255, 99, 114, 0.35);
+  padding: 0.4rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 99, 114, 0.35);
+}
