@@ -1,6 +1,20 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 
+const backdropStyle = {
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  zIndex: 1000,
+};
+const modalStyle = {
+  background: '#fff', borderRadius: '8px', padding: '2rem',
+  width: '100%', maxWidth: '480px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+  position: 'relative',
+};
+const fieldRow = { marginBottom: '1rem' };
+const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px', color: 'var(--color-muted)' };
+const valueStyle = { fontSize: '0.95rem', color: 'var(--color-text)' };
+
 export default function InvoiceItemsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -8,6 +22,13 @@ export default function InvoiceItemsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Modal state
+  const [modalItem, setModalItem] = useState(null);   // item object
+  const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
+  const [editDescription, setEditDescription] = useState('');
+  const [modalSaving, setModalSaving] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -18,6 +39,46 @@ export default function InvoiceItemsPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  function openView(item) {
+    setModalItem(item);
+    setModalMode('view');
+    setModalError('');
+  }
+
+  function openEdit(item) {
+    setModalItem(item);
+    setModalMode('edit');
+    setEditDescription(item.itemDescription);
+    setModalError('');
+  }
+
+  function closeModal() {
+    setModalItem(null);
+    setModalError('');
+  }
+
+  async function handleSaveEdit() {
+    if (!editDescription.trim()) { setModalError('Item name is required'); return; }
+    setModalSaving(true);
+    setModalError('');
+    try {
+      const res = await fetch(`/api/company/invoice-items/${modalItem._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemDescription: editDescription.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      setItems((prev) => prev.map((it) => it._id === modalItem._id ? { ...it, itemDescription: editDescription.trim() } : it));
+      closeModal();
+      setSuccess('Item updated successfully');
+    } catch (err) {
+      setModalError(err.message);
+    } finally {
+      setModalSaving(false);
+    }
+  }
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -112,12 +173,11 @@ export default function InvoiceItemsPage() {
                     <td><strong>{item.itemDescription}</strong></td>
                     <td>{new Date(item.createdAt).toLocaleDateString('en-GB')}</td>
                     <td>
-                      <button
-                        className="button button-sm button-danger"
-                        onClick={() => handleDelete(item._id)}
-                      >
-                        Remove
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button className="button button-sm button-secondary" onClick={() => openView(item)}>View</button>
+                        <button className="button button-sm button-primary" onClick={() => openEdit(item)}>Edit</button>
+                        <button className="button button-sm button-danger" onClick={() => handleDelete(item._id)}>Remove</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -126,6 +186,76 @@ export default function InvoiceItemsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      {modalItem && (
+        <div style={backdropStyle} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div style={modalStyle}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>
+                {modalMode === 'view' ? 'Invoice Item Details' : 'Edit Invoice Item'}
+              </h3>
+              <button
+                onClick={closeModal}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, color: 'var(--color-muted)' }}
+                aria-label="Close"
+              >×</button>
+            </div>
+
+            {modalError && <div className="alert alert-error" style={{ marginBottom: '1rem' }}>{modalError}</div>}
+
+            {/* Fields */}
+            {modalMode === 'view' ? (
+              <>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Item Name</span>
+                  <span style={valueStyle}>{modalItem.itemDescription}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Status</span>
+                  <span style={valueStyle}>{modalItem.status}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Date Added</span>
+                  <span style={valueStyle}>{new Date(modalItem.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Last Updated</span>
+                  <span style={valueStyle}>{new Date(modalItem.updatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                </div>
+              </>
+            ) : (
+              <div className="form-group">
+                <label>Item Name <span className="required">*</span></label>
+                <input
+                  className="input"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {/* Footer buttons */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              {modalMode === 'view' ? (
+                <>
+                  <button className="button button-secondary" onClick={closeModal}>Close</button>
+                  <button className="button button-primary" onClick={() => openEdit(modalItem)}>Edit</button>
+                </>
+              ) : (
+                <>
+                  <button className="button button-secondary" onClick={closeModal} disabled={modalSaving}>Cancel</button>
+                  <button className="button button-primary" onClick={handleSaveEdit} disabled={modalSaving}>
+                    {modalSaving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
