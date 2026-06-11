@@ -5,6 +5,7 @@ import Link from 'next/link';
 export default function CompanyRecordsPage() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
     fetch('/api/company/submissions')
@@ -12,6 +13,17 @@ export default function CompanyRecordsPage() {
       .then((d) => setSubmissions(d.submissions || []))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleDelete(id) {
+    if (!confirm('Delete this submission? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/company/submissions/${id}`, { method: 'DELETE' });
+      if (res.ok) setSubmissions((prev) => prev.filter((s) => s._id !== id));
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   const fmt = (n) => (n || 0).toLocaleString('en-PK', { minimumFractionDigits: 2 });
 
@@ -59,9 +71,18 @@ export default function CompanyRecordsPage() {
                       <td>PKR {fmt(s.totalBillAmount)}</td>
                       <td><span className={`status-badge ${s.status}`}>{s.status}</span></td>
                       <td>
-                        <Link href={`/company/submissions/${s._id}`} className="button button-sm button-secondary">
-                          View
-                        </Link>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <Link href={`/company/submissions/${s._id}`} className="button button-sm button-secondary">
+                            View
+                          </Link>
+                          <button
+                            className="button button-sm button-danger"
+                            onClick={() => handleDelete(s._id)}
+                            disabled={deleting === s._id}
+                          >
+                            {deleting === s._id ? '…' : 'Delete'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
