@@ -170,6 +170,86 @@ export default function InvoiceItemsEditor({ items, dispatch, refData }) {
               <label>SRO Item Serial No</label>
               <input className="input" value={item.sroItemSerialNo} onChange={(e) => update(index, 'sroItemSerialNo', e.target.value)} />
             </div>
+
+            <div className="form-group">
+              <label>Fixed / Notified Value (PKR)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.fixedNotifiedValue}
+                onChange={(e) => update(index, 'fixedNotifiedValue', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Extra Tax (PKR)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.extraTax}
+                onChange={(e) => update(index, 'extraTax', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Further Tax (PKR)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.furtherTax}
+                onChange={(e) => update(index, 'furtherTax', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Total Value of Sales / PFAD (PKR)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.totalValueOfSales}
+                onChange={(e) => update(index, 'totalValueOfSales', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>ST Withheld at Source (PKR)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={item.stWithheldAtSource}
+                onChange={(e) => update(index, 'stWithheldAtSource', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Invoice Reference No.</label>
+              <input className="input" value={item.invoiceReferenceNo} onChange={(e) => update(index, 'invoiceReferenceNo', e.target.value)} placeholder="e.g. INV-2026-0001" />
+            </div>
+
+            <div className="form-group">
+              <label>Reasons</label>
+              <input className="input" value={item.reasons} onChange={(e) => update(index, 'reasons', e.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label>Reason Remarks</label>
+              <input className="input" value={item.reasonRemarks} onChange={(e) => update(index, 'reasonRemarks', e.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label>Petroleum Levy on</label>
+              <input className="input" value={item.petroleumLevyOn} onChange={(e) => update(index, 'petroleumLevyOn', e.target.value)} placeholder="e.g. Direct Sale" />
+            </div>
           </div>
         </div>
       ))}

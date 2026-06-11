@@ -1,9 +1,34 @@
 'use client';
 import { useReducer, useEffect, useState } from 'react';
 import { submissionFormReducer, initialFormState } from './submissionFormReducer';
-import InvoiceItemsEditor from './InvoiceItemsEditor';
 import TotalsCard from './TotalsCard';
 import ValidationErrors from './ValidationErrors';
+
+const thStyle = {
+  border: '1px solid rgba(255,255,255,0.25)',
+  padding: '7px 6px',
+  textAlign: 'center',
+  fontSize: '0.77rem',
+  fontWeight: 600,
+  verticalAlign: 'middle',
+  whiteSpace: 'normal',
+  lineHeight: '1.3',
+  color: '#fff',
+};
+
+const tdStyle = {
+  border: '1px solid var(--color-border)',
+  padding: '4px',
+  verticalAlign: 'middle',
+};
+
+const ci = {
+  width: '100%',
+  minWidth: '96px',
+  padding: '4px 6px',
+  fontSize: '0.83rem',
+  boxSizing: 'border-box',
+};
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const PROVINCES = ['Islamabad','Punjab','Sindh','KPK','Balochistan','AJK','Gilgit-Baltistan'];
@@ -20,10 +45,15 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const [preparingPayload, setPreparingPayload] = useState(false);
   const [success, setSuccess] = useState('');
   const [globalError, setGlobalError] = useState('');
+  const [savedItems, setSavedItems] = useState([]);
+  const [pickedItem, setPickedItem] = useState('');
+  const [taxPeriodDate, setTaxPeriodDate] = useState(
+    () => `${(draftData || initialFormState).taxPeriodYear}-${String((draftData || initialFormState).taxPeriodMonth).padStart(2, '0')}-01`
+  );
 
   // Auto-populate seller fields from company profile on new submissions
   useEffect(() => {
-    if (draftData) return; // editing existing draft — don't overwrite
+    if (draftData) return;
     fetch('/api/company/profile')
       .then((r) => r.json())
       .then(({ company }) => {
@@ -32,11 +62,14 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         dispatch({ type: 'SET_FIELD', field: 'sellerNTN', value: company.ntn || '' });
         dispatch({ type: 'SET_FIELD', field: 'sellerProvince', value: company.province || '' });
         dispatch({ type: 'SET_FIELD', field: 'sellerAddress', value: company.address || '' });
+        if (company.province) {
+          dispatch({ type: 'UPDATE_ITEM', index: 0, field: 'sellerProvince', value: company.province });
+        }
       })
-      .catch(() => {}); // silently ignore if profile not available
+      .catch(() => {});
   }, [draftData]);
 
-  // Recalculate totals whenever itemList length changes (add/remove)
+  // Recalculate totals whenever itemList length changes
   useEffect(() => {
     dispatch({ type: 'RECALCULATE_TOTALS' });
   }, [state.itemList.length]);
@@ -57,7 +90,16 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     });
   }, []);
 
+  // Load saved invoice items
+  useEffect(() => {
+    fetch('/api/company/invoice-items')
+      .then((r) => r.json())
+      .then((d) => setSavedItems(d.items || []))
+      .catch(() => {});
+  }, []);
+
   const set = (field, value) => dispatch({ type: 'SET_FIELD', field, value });
+  const upd = (index, field, value) => dispatch({ type: 'UPDATE_ITEM', index, field, value });
 
   async function saveDraft() {
     setSaving(true);
@@ -89,13 +131,11 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     setValidating(true);
     setGlobalError('');
     try {
-      // First save latest state
       await fetch(`/api/company/submissions/${submissionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state),
       });
-      // Then validate
       const res = await fetch(`/api/company/submissions/${submissionId}/validate`, { method: 'POST' });
       const data = await res.json();
       dispatch({ type: 'SET_VALIDATION_ERRORS', errors: data.errors || [] });
@@ -133,6 +173,16 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const buyerTypes = refData.buyer_type || [];
   const provinceOptions = (refData.province || []).map((p) => p.value);
   const allProvinces = provinceOptions.length ? provinceOptions : PROVINCES;
+  const uomOptions = refData.uom || [];
+  const saleTypeOptions = refData.sale_type || [];
+  const hsCodeOptions = refData.hs_code || [];
+
+  const validationStatus =
+    state.validationErrors.length === 0 && submissionId
+      ? 'Valid'
+      : state.validationErrors.length > 0
+      ? 'Invalid'
+      : 'Pending';
 
   return (
     <div>
@@ -140,124 +190,321 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       {globalError && <div className="alert alert-error">{globalError}</div>}
       <ValidationErrors errors={state.validationErrors} />
 
-      {/* Tax Period */}
-      <div className="form-card">
-        <h3 className="form-section-title">Tax Period</h3>
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Month <span className="required">*</span></label>
-            <select className="select" value={state.taxPeriodMonth} onChange={(e) => set('taxPeriodMonth', Number(e.target.value))}>
-              {MONTHS.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
-            </select>
+      {/* DSI Header — mirrors Excel rows 1–3 */}
+      <div className="form-card" style={{ marginBottom: '1rem' }}>
+        {/* Row 1: Title + Note */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--color-primary)', paddingBottom: '0.5rem', marginBottom: '0.75rem' }}>
+          <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)', letterSpacing: '0.5px' }}>
+            DOMESTIC SALES INVOICES (DSI)
+          </strong>
+          <span style={{ fontSize: '0.72rem', color: 'var(--color-muted)', maxWidth: '55%', textAlign: 'right', lineHeight: 1.4 }}>
+            Note: Please Provide Registration No. or NTN with Check Digit in invoice entry.
+          </span>
+        </div>
+
+        {/* Row 2: Seller Reg No + Tax Period */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.8rem' }}>Seller Registration No. <span className="required">*</span></label>
+            <input className="input" value={state.sellerNTN} onChange={(e) => set('sellerNTN', e.target.value)} style={{ width: '160px' }} placeholder="e.g. 1234567-8" />
           </div>
-          <div className="form-group">
-            <label>Year <span className="required">*</span></label>
-            <input className="input" type="number" value={state.taxPeriodYear} onChange={(e) => set('taxPeriodYear', Number(e.target.value))} min="2020" max="2099" required />
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.8rem' }}>Tax Period <span className="required">*</span></label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                className="input"
+                type="date"
+                defaultValue={taxPeriodDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  setTaxPeriodDate(val);
+                  const [y, m] = val.split('-');
+                  set('taxPeriodYear', Number(y));
+                  set('taxPeriodMonth', Number(m));
+                }}
+                style={{ width: '155px' }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary)', letterSpacing: '0.5px' }}>
+                {taxPeriodDate ? taxPeriodDate.slice(0, 7).replace('-', '') : `${state.taxPeriodYear}${String(state.taxPeriodMonth).padStart(2, '0')}`}
+              </span>
+            </div>
           </div>
-          <div className="form-group">
-            <label>Submission Type</label>
-            <input className="input" value={state.submissionType} disabled />
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.8rem' }}>Submission Type</label>
+            <input className="input" value={state.submissionType} disabled style={{ width: '140px' }} />
           </div>
+        </div>
+
+        {/* Row 3: Stats */}
+        <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap', padding: '0.4rem 0.75rem', background: 'var(--color-bg-alt, #f5f7fa)', borderRadius: '4px', fontSize: '0.82rem' }}>
+          <span>Total Records: <strong>{state.itemList.length}</strong></span>
+          <span>Invalid Records: <strong style={{ color: state.validationErrors.length > 0 ? 'var(--color-danger)' : undefined }}>{state.validationErrors.length > 0 ? state.itemList.length : 0}</strong></span>
+          <span>Validation Status: <strong style={{ color: validationStatus === 'Valid' ? 'var(--color-success)' : validationStatus === 'Invalid' ? 'var(--color-danger)' : undefined }}>{validationStatus}</strong></span>
         </div>
       </div>
 
-      {/* Invoice Details */}
-      <div className="form-card">
-        <h3 className="form-section-title">Invoice Details</h3>
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Invoice Type <span className="required">*</span></label>
-            {invoiceTypes.length > 0 ? (
-              <select className="select" value={state.invoiceType} onChange={(e) => set('invoiceType', e.target.value)} required>
-                <option value="">Select Type</option>
-                {invoiceTypes.map((t) => <option key={t._id} value={t.value}>{t.label}</option>)}
-              </select>
+      {/* Saved Items auto-fill — above table */}
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+        {savedItems.length > 0 ? (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <label style={{ fontSize: '0.8rem', color: 'var(--color-muted)' }}>Auto fill items for this seller — if you have a new item please save it in invoice items to auto fill here:</label>
+            <select
+              className="select"
+              style={{ minWidth: '200px' }}
+              value={pickedItem}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPickedItem(val);
+                if (!val) return;
+                const newIndex = state.itemList.length;
+                dispatch({ type: 'ADD_ITEM' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: val });
+              }}
+            >
+              <option value="">— pick a saved item —</option>
+              {savedItems.map((s) => <option key={s._id} value={s.itemDescription}>{s.itemDescription}</option>)}
+            </select>
+          </div>
+        ) : (
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-muted)' }}>Auto fill items for this seller — if you have a new item please save it in invoice items to auto fill here.</span>
+        )}
+      </div>
+
+      {/* DSI Invoice Table — mirrors Excel rows 4–7+ */}
+      <div className="form-card" style={{ padding: '0.5rem', overflowX: 'scroll' }}>
+        <table style={{ borderCollapse: 'collapse', minWidth: '4080px', fontSize: '0.83rem', tableLayout: 'auto' }}>
+          <thead>
+            <tr style={{ background: 'var(--color-primary)', color: '#fff' }}>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '43px' }}>Sr.</th>
+              <th colSpan={3} style={thStyle}>Particulars of Buyers</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Sale Origination Province of Supplier</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Destination of Supply</th>
+              <th colSpan={4} style={thStyle}>Document</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '108px' }}>Sale Type</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '72px' }}>Rate (%)</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '84px' }}>Quantity</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '96px' }}>UoM</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '114px' }}>Unit Price (PKR)</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '126px' }}>Value of Sales Excluding Sales Tax</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '126px' }}>Sales Tax / FED in ST Mode</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '126px' }}>Fixed / Notified Value or Retail Price / Higher of Actual and Minimum Fixed Value</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '96px' }}>Extra Tax</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '96px' }}>Further Tax</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '126px' }}>Total Value of Sales (In case of PFAD only)</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '126px' }}>ST Withheld at Source</th>
+              <th colSpan={2} style={thStyle}>Exemption, Zero &amp; Reduce Rated Reference</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '144px' }}>Invoice Reference No.</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '120px' }}>Reasons</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Reason Remarks</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '180px' }}>Product Description</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Petroleum Levy on</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '48px' }}></th>
+            </tr>
+            <tr style={{ background: 'var(--color-primary)', color: '#fff' }}>
+              <th style={{ ...thStyle, minWidth: '144px' }}>Registration No. (NTN)</th>
+              <th style={{ ...thStyle, minWidth: '180px' }}>Name</th>
+              <th style={{ ...thStyle, minWidth: '120px' }}>Type</th>
+              <th style={{ ...thStyle, minWidth: '132px' }}>Type</th>
+              <th style={{ ...thStyle, minWidth: '156px' }}>Number</th>
+              <th style={{ ...thStyle, minWidth: '156px' }}>Date</th>
+              <th style={{ ...thStyle, minWidth: '132px' }}>HS Code Description</th>
+              <th style={{ ...thStyle, minWidth: '144px' }}>SRO No. / Schedule No.</th>
+              <th style={{ ...thStyle, minWidth: '108px' }}>Item S. No.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {state.itemList.length === 0 ? (
+              <tr>
+                <td colSpan={31} style={{ ...tdStyle, textAlign: 'center', padding: '1.5rem', color: 'var(--color-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                  Select invoice item from the dropdown above.
+                </td>
+              </tr>
             ) : (
-              <input className="input" value={state.invoiceType} onChange={(e) => set('invoiceType', e.target.value)} placeholder="e.g. Sale Invoice" required />
-            )}
-          </div>
-          <div className="form-group">
-            <label>Invoice Date <span className="required">*</span></label>
-            <input className="input" type="date" value={state.invoiceDate} onChange={(e) => set('invoiceDate', e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Invoice Number <span className="required">*</span></label>
-            <input className="input" value={state.invoiceNumber} onChange={(e) => set('invoiceNumber', e.target.value)} placeholder="e.g. INV-2026-0001" required />
-          </div>
-        </div>
-      </div>
+              state.itemList.map((item, index) => (
+              <tr key={index} style={{ background: index % 2 === 0 ? '#fff' : 'var(--color-bg-alt, #f9fafb)' }}>
+                <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
 
-      {/* Seller Details */}
-      <div className="form-card">
-        <h3 className="form-section-title">Seller Details</h3>
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Business Name <span className="required">*</span></label>
-            <input className="input" value={state.sellerBusinessName} onChange={(e) => set('sellerBusinessName', e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>NTN <span className="required">*</span></label>
-            <input className="input" value={state.sellerNTN} onChange={(e) => set('sellerNTN', e.target.value)} placeholder="e.g. 1234567-8" required />
-          </div>
-          <div className="form-group">
-            <label>Province <span className="required">*</span></label>
-            <select className="select" value={state.sellerProvince} onChange={(e) => set('sellerProvince', e.target.value)} required>
-              <option value="">Select Province</option>
-              {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label>Address <span className="required">*</span></label>
-            <textarea className="textarea" value={state.sellerAddress} onChange={(e) => set('sellerAddress', e.target.value)} required />
-          </div>
-        </div>
-      </div>
+                {/* Buyer Reg No (NTN) */}
+                <td style={tdStyle}>
+                  <input className="input" style={ci} value={item.buyerNTN ?? state.buyerNTN ?? ''} onChange={(e) => upd(index, 'buyerNTN', e.target.value)} placeholder="NTN / CNIC" />
+                </td>
 
-      {/* Buyer Details */}
-      <div className="form-card">
-        <h3 className="form-section-title">Buyer Details</h3>
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Business Name <span className="required">*</span></label>
-            <input className="input" value={state.buyerBusinessName} onChange={(e) => set('buyerBusinessName', e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>NTN <span style={{ color: 'var(--color-muted)', fontSize: '0.75rem' }}>(or CNIC)</span></label>
-            <input className="input" value={state.buyerNTN} onChange={(e) => set('buyerNTN', e.target.value)} placeholder="e.g. 8765432-1" />
-          </div>
-          <div className="form-group">
-            <label>CNIC <span style={{ color: 'var(--color-muted)', fontSize: '0.75rem' }}>(or NTN)</span></label>
-            <input className="input" value={state.buyerCNIC} onChange={(e) => set('buyerCNIC', e.target.value)} placeholder="e.g. 12345-1234567-1" />
-          </div>
-          <div className="form-group">
-            <label>Province <span className="required">*</span></label>
-            <select className="select" value={state.buyerProvince} onChange={(e) => set('buyerProvince', e.target.value)} required>
-              <option value="">Select Province</option>
-              {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Buyer Type</label>
-            {buyerTypes.length > 0 ? (
-              <select className="select" value={state.buyerType} onChange={(e) => set('buyerType', e.target.value)}>
-                <option value="">Select Type</option>
-                {buyerTypes.map((t) => <option key={t._id} value={t.value}>{t.label}</option>)}
-              </select>
-            ) : (
-              <input className="input" value={state.buyerType} onChange={(e) => set('buyerType', e.target.value)} />
-            )}
-          </div>
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label>Address <span className="required">*</span></label>
-            <textarea className="textarea" value={state.buyerAddress} onChange={(e) => set('buyerAddress', e.target.value)} required />
-          </div>
-        </div>
-      </div>
+                {/* Buyer Name */}
+                <td style={tdStyle}>
+                  <input className="input" style={{ ...ci, minWidth: '168px' }} value={item.buyerBusinessName ?? state.buyerBusinessName ?? ''} onChange={(e) => upd(index, 'buyerBusinessName', e.target.value)} />
+                </td>
 
-      {/* Invoice Items */}
-      <div className="form-card">
-        <h3 className="form-section-title">Invoice Items</h3>
-        <InvoiceItemsEditor items={state.itemList} dispatch={dispatch} refData={refData} />
+                {/* Buyer Type */}
+                <td style={tdStyle}>
+                  {buyerTypes.length > 0
+                    ? <select className="select" style={ci} value={item.buyerType ?? state.buyerType ?? ''} onChange={(e) => upd(index, 'buyerType', e.target.value)}>
+                        <option value="">—</option>
+                        {buyerTypes.map((t) => <option key={t._id} value={t.value}>{t.label}</option>)}
+                      </select>
+                    : <input className="input" style={ci} value={item.buyerType ?? state.buyerType ?? ''} onChange={(e) => upd(index, 'buyerType', e.target.value)} />}
+                </td>
+
+                {/* Sale Origination Province */}
+                <td style={tdStyle}>
+                  <select className="select" style={ci} value={item.sellerProvince ?? state.sellerProvince ?? ''} onChange={(e) => upd(index, 'sellerProvince', e.target.value)}>
+                    <option value="">—</option>
+                    {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </td>
+
+                {/* Destination of Supply (Buyer Province) */}
+                <td style={tdStyle}>
+                  <select className="select" style={ci} value={item.buyerProvince ?? state.buyerProvince ?? ''} onChange={(e) => upd(index, 'buyerProvince', e.target.value)}>
+                    <option value="">—</option>
+                    {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </td>
+
+                {/* Document Type */}
+                <td style={tdStyle}>
+                  {invoiceTypes.length > 0
+                    ? <select className="select" style={ci} value={item.invoiceType ?? state.invoiceType ?? ''} onChange={(e) => upd(index, 'invoiceType', e.target.value)}>
+                        <option value="">—</option>
+                        {invoiceTypes.map((t) => <option key={t._id} value={t.value}>{t.label}</option>)}
+                      </select>
+                    : <input className="input" style={ci} value={item.invoiceType ?? state.invoiceType ?? ''} onChange={(e) => upd(index, 'invoiceType', e.target.value)} />}
+                </td>
+
+                {/* Document Number */}
+                <td style={tdStyle}>
+                  <input className="input" style={{ ...ci, minWidth: '150px' }} value={item.invoiceNumber ?? state.invoiceNumber ?? ''} onChange={(e) => upd(index, 'invoiceNumber', e.target.value)} placeholder="INV-..." />
+                </td>
+
+                {/* Document Date */}
+                <td style={tdStyle}>
+                  <input className="input" type="date" style={{ ...ci, minWidth: '156px' }} value={item.invoiceDate ?? state.invoiceDate ?? ''} onChange={(e) => upd(index, 'invoiceDate', e.target.value)} />
+                </td>
+
+                {/* HS Code */}
+                <td style={tdStyle}>
+                  {hsCodeOptions.length > 0
+                    ? <select className="select" style={ci} value={item.hsCode ?? ''} onChange={(e) => upd(index, 'hsCode', e.target.value)}>
+                        <option value="">—</option>
+                        {hsCodeOptions.map((o) => <option key={o._id} value={o.value}>{o.label}</option>)}
+                      </select>
+                    : <input className="input" style={ci} value={item.hsCode ?? ''} onChange={(e) => upd(index, 'hsCode', e.target.value)} placeholder="e.g. 9999.9999" />}
+                </td>
+
+                {/* Sale Type */}
+                <td style={tdStyle}>
+                  {saleTypeOptions.length > 0
+                    ? <select className="select" style={ci} value={item.saleType ?? ''} onChange={(e) => upd(index, 'saleType', e.target.value)}>
+                        <option value="">—</option>
+                        {saleTypeOptions.map((o) => <option key={o._id} value={o.value}>{o.label}</option>)}
+                      </select>
+                    : <input className="input" style={ci} value={item.saleType ?? ''} onChange={(e) => upd(index, 'saleType', e.target.value)} />}
+                </td>
+
+                {/* Rate (Tax %) */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '70px' }} value={item.taxRate ?? 0} onChange={(e) => upd(index, 'taxRate', e.target.value)} min="0" max="100" step="0.01" />
+                </td>
+
+                {/* Quantity */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '78px' }} value={item.quantity ?? 1} onChange={(e) => upd(index, 'quantity', e.target.value)} min="0.01" step="0.01" />
+                </td>
+
+                {/* UoM */}
+                <td style={tdStyle}>
+                  {uomOptions.length > 0
+                    ? <select className="select" style={ci} value={item.uom ?? ''} onChange={(e) => upd(index, 'uom', e.target.value)}>
+                        <option value="">—</option>
+                        {uomOptions.map((o) => <option key={o._id} value={o.value}>{o.label}</option>)}
+                      </select>
+                    : <input className="input" style={{ ...ci, minWidth: '82px' }} value={item.uom ?? ''} onChange={(e) => upd(index, 'uom', e.target.value)} />}
+                </td>
+
+                {/* Unit Price */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.unitPrice ?? 0} onChange={(e) => upd(index, 'unitPrice', e.target.value)} min="0" step="0.01" />
+                </td>
+
+                {/* Value of Sales Excl. Tax (auto) */}
+                <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
+                  <input className="input" style={{ ...ci, minWidth: '108px' }} value={(Number(item.saleValue) || 0).toFixed(2)} disabled />
+                </td>
+
+                {/* Sales Tax / FED (auto) */}
+                <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
+                  <input className="input" style={{ ...ci, minWidth: '108px' }} value={(Number(item.taxAmount) || 0).toFixed(2)} disabled />
+                </td>
+
+                {/* Fixed / Notified Value */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.fixedNotifiedValue ?? 0} onChange={(e) => upd(index, 'fixedNotifiedValue', e.target.value)} min="0" step="0.01" />
+                </td>
+
+                {/* Extra Tax */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '90px' }} value={item.extraTax ?? 0} onChange={(e) => upd(index, 'extraTax', e.target.value)} min="0" step="0.01" />
+                </td>
+
+                {/* Further Tax */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '90px' }} value={item.furtherTax ?? 0} onChange={(e) => upd(index, 'furtherTax', e.target.value)} min="0" step="0.01" />
+                </td>
+
+                {/* Total Value of Sales / PFAD */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.totalValueOfSales ?? 0} onChange={(e) => upd(index, 'totalValueOfSales', e.target.value)} min="0" step="0.01" />
+                </td>
+
+                {/* ST Withheld at Source */}
+                <td style={tdStyle}>
+                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.stWithheldAtSource ?? 0} onChange={(e) => upd(index, 'stWithheldAtSource', e.target.value)} min="0" step="0.01" />
+                </td>
+
+                {/* SRO No. / Schedule No. */}
+                <td style={tdStyle}>
+                  <input className="input" style={ci} value={item.sroScheduleNo ?? ''} onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)} />
+                </td>
+
+                {/* Item S. No. */}
+                <td style={tdStyle}>
+                  <input className="input" style={ci} value={item.sroItemSerialNo ?? ''} onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)} />
+                </td>
+
+                {/* Invoice Reference No. */}
+                <td style={tdStyle}>
+                  <input className="input" style={{ ...ci, minWidth: '132px' }} value={item.invoiceReferenceNo ?? ''} onChange={(e) => upd(index, 'invoiceReferenceNo', e.target.value)} />
+                </td>
+
+                {/* Reasons */}
+                <td style={tdStyle}>
+                  <input className="input" style={ci} value={item.reasons ?? ''} onChange={(e) => upd(index, 'reasons', e.target.value)} />
+                </td>
+
+                {/* Reason Remarks */}
+                <td style={tdStyle}>
+                  <input className="input" style={ci} value={item.reasonRemarks ?? ''} onChange={(e) => upd(index, 'reasonRemarks', e.target.value)} />
+                </td>
+
+                {/* Product Description */}
+                <td style={tdStyle}>
+                  <input className="input" style={{ ...ci, minWidth: '174px' }} value={item.itemDescription ?? ''} onChange={(e) => upd(index, 'itemDescription', e.target.value)} />
+                </td>
+
+                {/* Petroleum Levy on */}
+                <td style={tdStyle}>
+                  <input className="input" style={ci} value={item.petroleumLevyOn ?? ''} onChange={(e) => upd(index, 'petroleumLevyOn', e.target.value)} placeholder="e.g. Direct Sale" />
+                </td>
+
+                {/* Remove row */}
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                  <button type="button" className="button button-sm button-danger" onClick={() => dispatch({ type: 'REMOVE_ITEM', index })} title="Remove row" style={{ fontSize: '1.1rem', lineHeight: 1, padding: '1px 8px' }}>−</button>
+                </td>
+              </tr>
+            )))
+            }
+          </tbody>
+        </table>
       </div>
 
       {/* Totals */}

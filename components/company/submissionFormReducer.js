@@ -16,8 +16,15 @@ export function submissionFormReducer(state, action) {
         ...state.itemList,
         {
           itemSNo: state.itemList.length + 1,
+          buyerNTN: '', buyerCNIC: '', buyerBusinessName: '', buyerType: '', buyerProvince: '',
+          sellerProvince: '',
+          invoiceType: '', invoiceNumber: '', invoiceDate: new Date().toISOString().split('T')[0],
           itemDescription: '', hsCode: '', quantity: 1, unitPrice: 0,
           saleValue: 0, taxRate: 0, taxAmount: 0, uom: '', saleType: '',
+          fixedNotifiedValue: 0, extraTax: 0, furtherTax: 0,
+          totalValueOfSales: 0, stWithheldAtSource: 0,
+          invoiceReferenceNo: '', reasons: '', reasonRemarks: '',
+          petroleumLevyOn: '',
           sroScheduleNo: '', sroItemSerialNo: '',
         },
       ];
@@ -88,13 +95,6 @@ export const initialFormState = {
   totalSaleValue: 0,
   totalTaxAmount: 0,
   totalBillAmount: 0,
-  itemList: [
-    {
-      itemSNo: 1,
-      itemDescription: '', hsCode: '', quantity: 1, unitPrice: 0,
-      saleValue: 0, taxRate: 0, taxAmount: 0, uom: '', saleType: '',
-      sroScheduleNo: '', sroItemSerialNo: '',
-    },
-  ],
+  itemList: [],
   validationErrors: [],
 };
