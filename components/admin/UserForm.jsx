@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 
 const emptyForm = {
-  fullName: '', email: '', password: '', role: 'company_user', companyId: '', status: 'active',
+  fullName: '', email: '', phone: '', password: '', role: 'company_user',
+  personnelType: 'accountant', companyId: '', status: 'active',
 };
 
 export default function UserForm({ initialData, onSave, onCancel, isNew = false }) {
@@ -18,6 +19,10 @@ export default function UserForm({ initialData, onSave, onCancel, isNew = false 
   }, []);
 
   const set = (field, value) => setForm((p) => ({ ...p, [field]: value }));
+
+  const isCompanyUser = form.role === 'company_user';
+  const isSupervisor = isCompanyUser && form.personnelType === 'supervisor';
+  const passwordRequired = isNew && !isSupervisor;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -52,8 +57,24 @@ export default function UserForm({ initialData, onSave, onCancel, isNew = false 
             <input className="input" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} required />
           </div>
           <div className="form-group">
-            <label>{isNew ? 'Password' : 'New Password (leave blank to keep)'}{isNew && <span className="required"> *</span>}</label>
-            <input className="input" type="password" value={form.password || ''} onChange={(e) => set('password', e.target.value)} required={isNew} minLength={isNew ? 8 : undefined} />
+            <label>Phone</label>
+            <input className="input" value={form.phone || ''} onChange={(e) => set('phone', e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>
+              {isNew ? 'Password' : 'New Password (leave blank to keep)'}
+              {passwordRequired && <span className="required"> *</span>}
+            </label>
+            <input
+              className="input"
+              type="password"
+              value={form.password || ''}
+              onChange={(e) => set('password', e.target.value)}
+              required={passwordRequired}
+              minLength={passwordRequired ? 8 : undefined}
+              disabled={isSupervisor}
+              placeholder={isSupervisor ? 'Supervisors do not log in' : ''}
+            />
           </div>
           <div className="form-group">
             <label>Role <span className="required">*</span></label>
@@ -62,7 +83,16 @@ export default function UserForm({ initialData, onSave, onCancel, isNew = false 
               <option value="super_admin">Super Admin</option>
             </select>
           </div>
-          {form.role === 'company_user' && (
+          {isCompanyUser && (
+            <div className="form-group">
+              <label>Personnel Type <span className="required">*</span></label>
+              <select className="select" value={form.personnelType || 'accountant'} onChange={(e) => set('personnelType', e.target.value)} required>
+                <option value="accountant">Accountant (logs in, works on submissions)</option>
+                <option value="supervisor">Supervisor (reporting only, no login)</option>
+              </select>
+            </div>
+          )}
+          {isCompanyUser && (
             <div className="form-group">
               <label>Assign to Company <span className="required">*</span></label>
               <select className="select" value={form.companyId || ''} onChange={(e) => set('companyId', e.target.value)} required>

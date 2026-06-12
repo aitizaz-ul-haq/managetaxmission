@@ -25,6 +25,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Your account is inactive. Contact admin.' }, { status: 403 });
     }
 
+    // Supervisors are reporting-only contacts and cannot sign in.
+    if (user.personnelType === 'supervisor' || !user.password) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });

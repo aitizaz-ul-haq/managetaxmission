@@ -22,10 +22,10 @@ export default function NewUserPage() {
         <div className="breadcrumb">
           <a href="/admin/users">Users</a>
           <span>/</span>
-          <span>Create New</span>
+          <span>Add Users</span>
         </div>
         <div className="page-header">
-          <h1 className="page-title">Create Company User</h1>
+          <h1 className="page-title">Add Users</h1>
         </div>
         <UserForm onSave={handleSave} onCancel={() => router.push('/admin/users')} isNew />
       </div>

@@ -31,7 +31,9 @@ export async function PUT(request, { params }) {
   const updateData = {
     fullName: body.fullName,
     email: body.email.toLowerCase().trim(),
+    phone: body.phone || '',
     role: body.role,
+    personnelType: body.role === 'company_user' ? body.personnelType : null,
     companyId: body.companyId || null,
     status: body.status,
   };

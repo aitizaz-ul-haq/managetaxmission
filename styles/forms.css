@@ -16,6 +16,45 @@
   border-bottom: 2px solid var(--color-muted-purple);
 }
 
+.form-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-muted-purple);
+}
+
+.form-section-header .form-section-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.form-subsection {
+  padding: 1rem 0;
+  border-top: 1px dashed var(--color-border);
+}
+
+.form-subsection:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.form-subsection-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+.form-subsection-hint {
+  font-size: var(--font-sm);
+  color: var(--color-muted);
+  margin-bottom: 1rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

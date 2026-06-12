@@ -30,6 +30,7 @@ export default function UserTable({ users, onRefresh }) {
           <tr>
             <th>Name</th>
             <th>Email</th>
+            <th>Type</th>
             <th>Company</th>
             <th>Status</th>
             <th>Last Login</th>
@@ -41,6 +42,13 @@ export default function UserTable({ users, onRefresh }) {
             <tr key={u._id}>
               <td><strong>{u.fullName}</strong></td>
               <td>{u.email}</td>
+              <td>
+                {u.role === 'super_admin'
+                  ? 'Admin'
+                  : u.personnelType
+                    ? u.personnelType.charAt(0).toUpperCase() + u.personnelType.slice(1)
+                    : '—'}
+              </td>
               <td>{u.companyId?.companyName || '—'}</td>
               <td><span className={`status-badge ${u.status}`}>{u.status}</span></td>
               <td>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : '—'}</td>

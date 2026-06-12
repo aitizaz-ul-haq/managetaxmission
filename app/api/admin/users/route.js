@@ -37,12 +37,15 @@ export async function POST(request) {
     return NextResponse.json({ errors: ['Email already in use'] }, { status: 422 });
   }
 
-  const hashed = await hashPassword(body.password);
+  const isSupervisor = body.role === 'company_user' && body.personnelType === 'supervisor';
+  const hashed = body.password ? await hashPassword(body.password) : '';
   const newUser = await User.create({
     fullName: body.fullName,
     email: body.email.toLowerCase().trim(),
-    password: hashed,
+    phone: body.phone || '',
+    password: isSupervisor ? '' : hashed,
     role: body.role,
+    personnelType: body.role === 'company_user' ? body.personnelType : null,
     companyId: body.companyId || null,
     status: body.status || 'active',
     createdBy: adminUser.userId,
