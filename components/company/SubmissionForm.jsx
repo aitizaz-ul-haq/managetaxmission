@@ -272,7 +272,6 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerNTN', value: picked.registrationNo || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerBusinessName', value: picked.itemDescription || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerType', value: picked.type || '' });
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.itemDescription || '' });
                 setPickedItem('');
               }}
             >
