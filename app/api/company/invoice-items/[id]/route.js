@@ -3,20 +3,34 @@ import connectDB from '../../../../../lib/mongodb';
 import InvoiceItem from '../../../../../models/InvoiceItem';
 import { requireCompanyUser } from '../../../../../lib/auth/requireCompanyUser';
 
-// PUT /api/company/invoice-items/[id]  — update item description
+const VALID_TYPES = ['Unregistered', 'Registered', 'Unrecognised', 'Retail Consumer'];
+
+// PUT /api/company/invoice-items/[id]  — update item
 export async function PUT(request, { params }) {
   const { error, user } = await requireCompanyUser(request);
   if (error) return error;
 
-  const { itemDescription } = await request.json();
+  const { registrationNo, itemDescription, type } = await request.json();
+
+  if (!registrationNo?.trim()) {
+    return NextResponse.json({ error: 'Registration No is required' }, { status: 400 });
+  }
   if (!itemDescription?.trim()) {
-    return NextResponse.json({ error: 'Item name is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+  }
+  const itemType = type?.trim() || 'Unregistered';
+  if (!VALID_TYPES.includes(itemType)) {
+    return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
   }
 
   await connectDB();
   const item = await InvoiceItem.findOneAndUpdate(
     { _id: params.id, companyId: user.companyId },
-    { itemDescription: itemDescription.trim() },
+    {
+      registrationNo: registrationNo.trim(),
+      itemDescription: itemDescription.trim(),
+      type: itemType,
+    },
     { new: true }
   ).lean();
 

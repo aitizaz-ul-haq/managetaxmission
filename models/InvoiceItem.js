@@ -4,7 +4,14 @@ const InvoiceItemSchema = new mongoose.Schema(
   {
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    registrationNo: { type: String, required: true, trim: true },
     itemDescription: { type: String, required: true, trim: true },
+    type: {
+      type: String,
+      enum: ['Unregistered', 'Registered', 'Unrecognised', 'Retail Consumer'],
+      default: 'Unregistered',
+      required: true,
+    },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   },
   { timestamps: true }

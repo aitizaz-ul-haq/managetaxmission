@@ -15,10 +15,14 @@ const fieldRow = { marginBottom: '1rem' };
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px', color: 'var(--color-muted)' };
 const valueStyle = { fontSize: '0.95rem', color: 'var(--color-text)' };
 
+const TYPE_OPTIONS = ['Unregistered', 'Registered', 'Unrecognised', 'Retail Consumer'];
+
 export default function InvoiceItemsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newRegistrationNo, setNewRegistrationNo] = useState('');
   const [newName, setNewName] = useState('');
+  const [newType, setNewType] = useState('Unregistered');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -26,7 +30,9 @@ export default function InvoiceItemsPage() {
   // Modal state
   const [modalItem, setModalItem] = useState(null);   // item object
   const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
-  const [editDescription, setEditDescription] = useState('');
+  const [editRegistrationNo, setEditRegistrationNo] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState('Unregistered');
   const [modalSaving, setModalSaving] = useState(false);
   const [modalError, setModalError] = useState('');
 
@@ -49,7 +55,9 @@ export default function InvoiceItemsPage() {
   function openEdit(item) {
     setModalItem(item);
     setModalMode('edit');
-    setEditDescription(item.itemDescription);
+    setEditRegistrationNo(item.registrationNo || '');
+    setEditName(item.itemDescription || '');
+    setEditType(item.type || 'Unregistered');
     setModalError('');
   }
 
@@ -59,18 +67,25 @@ export default function InvoiceItemsPage() {
   }
 
   async function handleSaveEdit() {
-    if (!editDescription.trim()) { setModalError('Item name is required'); return; }
+    if (!editRegistrationNo.trim()) { setModalError('Registration No is required'); return; }
+    if (!editName.trim()) { setModalError('Name is required'); return; }
     setModalSaving(true);
     setModalError('');
     try {
       const res = await fetch(`/api/company/invoice-items/${modalItem._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemDescription: editDescription.trim() }),
+        body: JSON.stringify({
+          registrationNo: editRegistrationNo.trim(),
+          itemDescription: editName.trim(),
+          type: editType,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
-      setItems((prev) => prev.map((it) => it._id === modalItem._id ? { ...it, itemDescription: editDescription.trim() } : it));
+      setItems((prev) => prev.map((it) => it._id === modalItem._id
+        ? { ...it, registrationNo: editRegistrationNo.trim(), itemDescription: editName.trim(), type: editType }
+        : it));
       closeModal();
       setSuccess('Item updated successfully');
     } catch (err) {
@@ -82,7 +97,7 @@ export default function InvoiceItemsPage() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newRegistrationNo.trim() || !newName.trim()) return;
     setSaving(true);
     setError('');
     setSuccess('');
@@ -90,11 +105,17 @@ export default function InvoiceItemsPage() {
       const res = await fetch('/api/company/invoice-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemDescription: newName.trim() }),
+        body: JSON.stringify({
+          registrationNo: newRegistrationNo.trim(),
+          itemDescription: newName.trim(),
+          type: newType,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save');
+      setNewRegistrationNo('');
       setNewName('');
+      setNewType('Unregistered');
       setSuccess('Item saved successfully');
       load();
     } catch (err) {
@@ -126,8 +147,8 @@ export default function InvoiceItemsPage() {
         {success && <div className="alert alert-success">{success}</div>}
         <form onSubmit={handleAdd}>
           <div className="form-grid">
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label>Item Name <span className="required">*</span></label>
+            <div className="form-group">
+              <label>Name <span className="required">*</span></label>
               <input
                 className="input"
                 value={newName}
@@ -136,9 +157,29 @@ export default function InvoiceItemsPage() {
                 required
               />
             </div>
+            <div className="form-group">
+              <label>Registration No <span className="required">*</span></label>
+              <input
+                className="input"
+                value={newRegistrationNo}
+                onChange={(e) => setNewRegistrationNo(e.target.value)}
+                placeholder="e.g. 1234567-8"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Type <span className="required">*</span></label>
+              <select
+                className="select"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+              >
+                {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
           </div>
           <div className="form-actions">
-            <button type="submit" className="button button-primary" disabled={saving || !newName.trim()}>
+            <button type="submit" className="button button-primary" disabled={saving || !newRegistrationNo.trim() || !newName.trim()}>
               {saving ? 'Saving…' : '+ Add Item'}
             </button>
           </div>
@@ -161,7 +202,9 @@ export default function InvoiceItemsPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Item Name</th>
+                  <th>Name</th>
+                  <th>Registration No</th>
+                  <th>Type</th>
                   <th>Added</th>
                   <th>Actions</th>
                 </tr>
@@ -171,6 +214,8 @@ export default function InvoiceItemsPage() {
                   <tr key={item._id}>
                     <td>{i + 1}</td>
                     <td><strong>{item.itemDescription}</strong></td>
+                    <td>{item.registrationNo}</td>
+                    <td>{item.type}</td>
                     <td>{new Date(item.createdAt).toLocaleDateString('en-GB')}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -209,8 +254,16 @@ export default function InvoiceItemsPage() {
             {modalMode === 'view' ? (
               <>
                 <div style={fieldRow}>
-                  <span style={labelStyle}>Item Name</span>
+                  <span style={labelStyle}>Name</span>
                   <span style={valueStyle}>{modalItem.itemDescription}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Registration No</span>
+                  <span style={valueStyle}>{modalItem.registrationNo}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Type</span>
+                  <span style={valueStyle}>{modalItem.type}</span>
                 </div>
                 <div style={fieldRow}>
                   <span style={labelStyle}>Status</span>
@@ -226,15 +279,35 @@ export default function InvoiceItemsPage() {
                 </div>
               </>
             ) : (
-              <div className="form-group">
-                <label>Item Name <span className="required">*</span></label>
-                <input
-                  className="input"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  autoFocus
-                />
-              </div>
+              <>
+                <div className="form-group">
+                  <label>Name <span className="required">*</span></label>
+                  <input
+                    className="input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Registration No <span className="required">*</span></label>
+                  <input
+                    className="input"
+                    value={editRegistrationNo}
+                    onChange={(e) => setEditRegistrationNo(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Type <span className="required">*</span></label>
+                  <select
+                    className="select"
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value)}
+                  >
+                    {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </>
             )}
 
             {/* Footer buttons */}

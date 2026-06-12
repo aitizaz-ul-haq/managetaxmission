@@ -32,6 +32,13 @@ const ci = {
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const PROVINCES = ['Islamabad','Punjab','Sindh','KPK','Balochistan','AJK','Gilgit-Baltistan'];
+const DOCUMENT_TYPES = ['Sale invoice', 'Credit Note', 'Debit Note', 'STWH'];
+const HS_CODES = ['9815.9000', '9816.0000', '9817.0000', '9817.1000'];
+const SALE_TYPES = ['Services', 'Services (FED in ST Mode)', 'Goods (FED in ST Mode)', 'Goods at Reduced Rate'];
+const RATE_OPTIONS = [{ value: 0, label: '0.00%' }, { value: 1, label: '1%' }, { value: 8, label: '8%' }, { value: 16, label: '16%' }];
+const UOM_OPTIONS = ['', 'NO', 'Numbers, pieces, units', 'Pair'];
+const SRO_SCHEDULES = ['ICTO TABLE II', 'ICTO TABLE I', 'NINTH SCHEDULE', 'SECTION 49'];
+const ITEM_SERIALS = ['1(i)', '1(i)(a)', '100A', '100A((i))'];
 
 export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const [state, dispatch] = useReducer(
@@ -257,13 +264,20 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 const val = e.target.value;
                 setPickedItem(val);
                 if (!val) return;
+                const picked = savedItems.find((s) => s._id === val);
+                if (!picked) return;
                 const newIndex = state.itemList.length;
                 dispatch({ type: 'ADD_ITEM' });
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: val });
+                // Particulars of Buyers — auto-filled from saved invoice item
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerNTN', value: picked.registrationNo || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerBusinessName', value: picked.itemDescription || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerType', value: picked.type || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.itemDescription || '' });
+                setPickedItem('');
               }}
             >
               <option value="">— pick a saved item —</option>
-              {savedItems.map((s) => <option key={s._id} value={s.itemDescription}>{s.itemDescription}</option>)}
+              {savedItems.map((s) => <option key={s._id} value={s._id}>{s.itemDescription}</option>)}
             </select>
           </div>
         ) : (
@@ -363,12 +377,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
                 {/* Document Type */}
                 <td style={tdStyle}>
-                  {invoiceTypes.length > 0
-                    ? <select className="select" style={ci} value={item.invoiceType ?? state.invoiceType ?? ''} onChange={(e) => upd(index, 'invoiceType', e.target.value)}>
-                        <option value="">—</option>
-                        {invoiceTypes.map((t) => <option key={t._id} value={t.value}>{t.label}</option>)}
-                      </select>
-                    : <input className="input" style={ci} value={item.invoiceType ?? state.invoiceType ?? ''} onChange={(e) => upd(index, 'invoiceType', e.target.value)} />}
+                  <select className="select" style={ci} value={item.invoiceType || 'Sale invoice'} onChange={(e) => upd(index, 'invoiceType', e.target.value)}>
+                    {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </td>
 
                 {/* Document Number */}
@@ -383,27 +394,23 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
                 {/* HS Code */}
                 <td style={tdStyle}>
-                  {hsCodeOptions.length > 0
-                    ? <select className="select" style={ci} value={item.hsCode ?? ''} onChange={(e) => upd(index, 'hsCode', e.target.value)}>
-                        <option value="">—</option>
-                        {hsCodeOptions.map((o) => <option key={o._id} value={o.value}>{o.label}</option>)}
-                      </select>
-                    : <input className="input" style={ci} value={item.hsCode ?? ''} onChange={(e) => upd(index, 'hsCode', e.target.value)} placeholder="e.g. 9999.9999" />}
+                  <select className="select" style={ci} value={item.hsCode || '9815.9000'} onChange={(e) => upd(index, 'hsCode', e.target.value)}>
+                    {HS_CODES.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
                 </td>
 
                 {/* Sale Type */}
                 <td style={tdStyle}>
-                  {saleTypeOptions.length > 0
-                    ? <select className="select" style={ci} value={item.saleType ?? ''} onChange={(e) => upd(index, 'saleType', e.target.value)}>
-                        <option value="">—</option>
-                        {saleTypeOptions.map((o) => <option key={o._id} value={o.value}>{o.label}</option>)}
-                      </select>
-                    : <input className="input" style={ci} value={item.saleType ?? ''} onChange={(e) => upd(index, 'saleType', e.target.value)} />}
+                  <select className="select" style={ci} value={item.saleType || 'Services'} onChange={(e) => upd(index, 'saleType', e.target.value)}>
+                    {SALE_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
                 </td>
 
                 {/* Rate (Tax %) */}
                 <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '70px' }} value={item.taxRate ?? 0} onChange={(e) => upd(index, 'taxRate', e.target.value)} min="0" max="100" step="0.01" />
+                  <select className="select" style={{ ...ci, minWidth: '70px' }} value={Number(item.taxRate ?? 0)} onChange={(e) => upd(index, 'taxRate', Number(e.target.value))}>
+                    {RATE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </td>
 
                 {/* Quantity */}
@@ -413,12 +420,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
                 {/* UoM */}
                 <td style={tdStyle}>
-                  {uomOptions.length > 0
-                    ? <select className="select" style={ci} value={item.uom ?? ''} onChange={(e) => upd(index, 'uom', e.target.value)}>
-                        <option value="">—</option>
-                        {uomOptions.map((o) => <option key={o._id} value={o.value}>{o.label}</option>)}
-                      </select>
-                    : <input className="input" style={{ ...ci, minWidth: '82px' }} value={item.uom ?? ''} onChange={(e) => upd(index, 'uom', e.target.value)} />}
+                  <select className="select" style={{ ...ci, minWidth: '82px' }} value={item.uom ?? ''} onChange={(e) => upd(index, 'uom', e.target.value)}>
+                    {UOM_OPTIONS.map((o) => <option key={o || 'blank'} value={o}>{o}</option>)}
+                  </select>
                 </td>
 
                 {/* Unit Price */}
@@ -463,12 +467,16 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
                 {/* SRO No. / Schedule No. */}
                 <td style={tdStyle}>
-                  <input className="input" style={ci} value={item.sroScheduleNo ?? ''} onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)} />
+                  <select className="select" style={ci} value={item.sroScheduleNo || 'ICTO TABLE II'} onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)}>
+                    {SRO_SCHEDULES.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
                 </td>
 
                 {/* Item S. No. */}
                 <td style={tdStyle}>
-                  <input className="input" style={ci} value={item.sroItemSerialNo ?? ''} onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)} />
+                  <select className="select" style={ci} value={item.sroItemSerialNo || '1(i)'} onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)}>
+                    {ITEM_SERIALS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
                 </td>
 
                 {/* Invoice Reference No. */}

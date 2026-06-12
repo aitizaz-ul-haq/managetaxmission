@@ -16,14 +16,24 @@ export async function GET(request) {
   return NextResponse.json({ items });
 }
 
+const VALID_TYPES = ['Unregistered', 'Registered', 'Unrecognised', 'Retail Consumer'];
+
 // POST /api/company/invoice-items  — create a new invoice item
 export async function POST(request) {
   const { error, user } = await requireCompanyUser(request);
   if (error) return error;
 
-  const { itemDescription } = await request.json();
+  const { registrationNo, itemDescription, type } = await request.json();
+
+  if (!registrationNo?.trim()) {
+    return NextResponse.json({ error: 'Registration No is required' }, { status: 400 });
+  }
   if (!itemDescription?.trim()) {
-    return NextResponse.json({ error: 'Item name is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+  }
+  const itemType = type?.trim() || 'Unregistered';
+  if (!VALID_TYPES.includes(itemType)) {
+    return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
   }
 
   await connectDB();
@@ -40,7 +50,9 @@ export async function POST(request) {
   const item = await InvoiceItem.create({
     companyId: user.companyId,
     createdBy: user.userId,
+    registrationNo: registrationNo.trim(),
     itemDescription: itemDescription.trim(),
+    type: itemType,
   });
 
   return NextResponse.json({ item }, { status: 201 });
