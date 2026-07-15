@@ -7,6 +7,7 @@
 @import '../styles/dashboard.css';
 @import '../styles/auth.css';
 @import '../styles/modal.css';
+@import '../styles/print.css';
 
 /* ── TikTok Sans (place files in /public/fonts/) ─────────────────────── */
 @font-face {

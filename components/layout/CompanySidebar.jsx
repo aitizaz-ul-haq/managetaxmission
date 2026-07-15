@@ -9,8 +9,8 @@ const navItems = [
   { href: '/company/dashboard', label: 'Dashboard' },
   { href: '/company/submissions/new', label: 'New Submission' },
   { href: '/company/invoice-items', label: 'Invoice Items' },
-  { href: '/company/records', label: 'Records' },
-  { href: '/company/fbr-records', label: 'FBR Records' },
+  { href: '/company/records', label: 'Submissions' },
+  { href: '/company/fbr-records', label: 'FBR Invoices' },
   { href: '/company/profile', label: 'My Profile' },
 ];
 

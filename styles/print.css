@@ -1,0 +1,52 @@
+/* Elements that only appear on printed output */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* A4 page with tight margins so data can use the full width */
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    width: 210mm;
+    height: auto;
+  }
+
+  /* Hide everything, then reveal only the print area */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    overflow: visible;
+    border-radius: 0;
+  }
+
+  /* Controls / interactive chrome should not print */
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: flex !important;
+  }
+}

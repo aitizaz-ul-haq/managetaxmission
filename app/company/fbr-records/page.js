@@ -1,6 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import FbrSuccessModal from '../../../components/company/FbrSuccessModal';
+import ReceiptViewModal from '../../../components/company/ReceiptViewModal';
+import PasswordConfirmModal from '../../../components/company/PasswordConfirmModal';
 
 export default function FbrRecordsPage() {
   const [receipts, setReceipts] = useState([]);
@@ -9,6 +11,13 @@ export default function FbrRecordsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [lastReceipt, setLastReceipt] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [search, setSearch] = useState('');
+
+  const [viewing, setViewing] = useState(null);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   async function loadReceipts() {
     const res = await fetch('/api/fbr/receipts');
@@ -46,14 +55,49 @@ export default function FbrRecordsPage() {
     }
   }
 
+  async function confirmDelete(password) {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      const res = await fetch(`/api/fbr/receipts/${deleteTarget._id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      setReceipts((prev) => prev.filter((r) => r._id !== deleteTarget._id));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const fmt = (d) => (d ? new Date(d).toLocaleString('en-PK') : '—');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return receipts;
+    return receipts.filter((r) => {
+      const reference = r.fbrResponse?.reference || r.fbrResponse?.invoiceNumber || r.errorCode || '';
+      const status = r.success ? 'success' : 'failed';
+      const received = fmt(r.receivedAt || r.createdAt);
+      return [r.submissionId, r.action, status, r.environment, reference, received]
+        .join(' ')
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [receipts, search]);
 
   return (
     <div className="page-content">
       <div className="page-header">
         <div>
-          <h1 className="page-title">FBR Records</h1>
-          <p className="page-subtitle">Receipts returned by the FBR gateway</p>
+          <h1 className="page-title">FBR Invoices</h1>
+          <p className="page-subtitle">FBR invoices confirming your tax submissions were received</p>
         </div>
         <button
           className="button button-primary"
@@ -70,14 +114,28 @@ export default function FbrRecordsPage() {
         </div>
       )}
 
+      <div style={{ marginBottom: '1rem', maxWidth: '360px' }}>
+        <input
+          className="input"
+          type="search"
+          placeholder="Filter by submission, status, reference, date…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       {loading ? (
         <div className="loading-spinner"><p>Loading…</p></div>
       ) : (
         <div className="table-wrapper">
-          {receipts.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="table-empty">
-              <h3>No FBR records yet</h3>
-              <p>Send a test submission to see a receipt appear here.</p>
+              <h3>{receipts.length === 0 ? 'No FBR invoices yet' : 'No matches found'}</h3>
+              <p>
+                {receipts.length === 0
+                  ? 'Send a test submission to see an FBR invoice appear here.'
+                  : 'Try a different search term.'}
+              </p>
             </div>
           ) : (
             <table>
@@ -89,10 +147,11 @@ export default function FbrRecordsPage() {
                   <th>Environment</th>
                   <th>Reference</th>
                   <th>Received</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {receipts.map((r) => (
+                {filtered.map((r) => (
                   <tr key={r._id}>
                     <td><code>{r.submissionId || '—'}</code></td>
                     <td>{r.action}</td>
@@ -110,6 +169,19 @@ export default function FbrRecordsPage() {
                         '—'}
                     </td>
                     <td>{fmt(r.receivedAt || r.createdAt)}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button className="button button-sm button-secondary" onClick={() => setViewing(r)}>
+                          View
+                        </button>
+                        <button
+                          className="button button-sm button-danger"
+                          onClick={() => { setDeleteError(''); setDeleteTarget(r); }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -122,6 +194,18 @@ export default function FbrRecordsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         receipt={lastReceipt}
+      />
+
+      <ReceiptViewModal open={!!viewing} onClose={() => setViewing(null)} receipt={viewing} />
+
+      <PasswordConfirmModal
+        open={!!deleteTarget}
+        title="Delete FBR Invoice"
+        message="This permanently deletes the FBR invoice. Enter your password to confirm."
+        loading={deleting}
+        error={deleteError}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
       />
     </div>
   );
