@@ -10,6 +10,7 @@ const navItems = [
   { href: '/company/submissions/new', label: 'New Submission' },
   { href: '/company/invoice-items', label: 'Invoice Items' },
   { href: '/company/records', label: 'Records' },
+  { href: '/company/fbr-records', label: 'FBR Records' },
   { href: '/company/profile', label: 'My Profile' },
 ];
 

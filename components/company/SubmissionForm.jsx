@@ -3,6 +3,31 @@ import { useReducer, useEffect, useState } from 'react';
 import { submissionFormReducer, initialFormState } from './submissionFormReducer';
 import TotalsCard from './TotalsCard';
 import ValidationErrors from './ValidationErrors';
+import FbrSuccessModal from './FbrSuccessModal';
+
+/**
+ * FBR FIELD GAPS — form inputs still missing (bridge requires/uses them).
+ * The Submission model now stores these, and mapSubmissionToInvoice reads them,
+ * but there is no UI to enter them yet. Add form inputs later to avoid FBR
+ * rejections when the real submission data is entered manually:
+ *
+ * Top-level (invoice):
+ *  - sellerAddress  -> REQUIRED non-empty. Currently auto-filled from company profile;
+ *                      add a visible/editable field if profile may be blank.
+ *  - scenarioId     -> optional string on bridge; add a field if FBR needs a value.
+ *
+ * Per-item:
+ *  - fedPayable     -> number, defaults to 0. No column yet.
+ *  - discount       -> number, defaults to 0. No column yet.
+ *
+ * buyerAddress now has a column at the end of the DSI table (after Petroleum Levy).
+ *
+ * Already captured by the form: invoiceType, invoiceDate, seller* , buyerNTN,
+ * buyerBusinessName, buyerProvince, buyerType(->buyerRegistrationType), rate,
+ * uoM, quantity, saleValue, taxAmount, fixedNotifiedValue, extraTax, furtherTax,
+ * totalValueOfSales, stWithheldAtSource, sroScheduleNo, sroItemSerialNo,
+ * itemDescription, invoiceReferenceNo.
+ */
 
 const thStyle = {
   border: '1px solid rgba(255,255,255,0.25)',
@@ -49,7 +74,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const [refData, setRefData] = useState({});
   const [saving, setSaving] = useState(false);
   const [validating, setValidating] = useState(false);
-  const [preparingPayload, setPreparingPayload] = useState(false);
+  const [submittingFbr, setSubmittingFbr] = useState(false);
+  const [fbrModalOpen, setFbrModalOpen] = useState(false);
+  const [fbrReceipt, setFbrReceipt] = useState(null);
   const [success, setSuccess] = useState('');
   const [globalError, setGlobalError] = useState('');
   const [savedItems, setSavedItems] = useState([]);
@@ -108,6 +135,69 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const set = (field, value) => dispatch({ type: 'SET_FIELD', field, value });
   const upd = (index, field, value) => dispatch({ type: 'UPDATE_ITEM', index, field, value });
 
+  function fillMockData() {
+    setGlobalError('');
+    setSuccess('');
+    const today = new Date().toISOString().split('T')[0];
+    dispatch({
+      type: 'LOAD_DRAFT',
+      data: {
+        ...state,
+        submissionType: 'sales_tax_fed',
+        invoiceType: 'Sale invoice',
+        invoiceDate: today,
+        invoiceNumber: 'INV-MOCK-001',
+        sellerBusinessName: state.sellerBusinessName || 'Manage Taxmission Test Seller',
+        sellerNTN: state.sellerNTN || '1234567',
+        sellerProvince: state.sellerProvince || 'Sindh',
+        sellerAddress: state.sellerAddress || 'Office 1, Test Plaza, Karachi',
+        buyerBusinessName: 'Test Buyer Pvt Ltd',
+        buyerNTN: '7654321',
+        buyerProvince: 'Punjab',
+        buyerAddress: 'Suite 5, Buyer Tower, Lahore',
+        buyerType: 'Registered',
+        validationErrors: [],
+        itemList: [
+          {
+            itemSNo: 1,
+            buyerNTN: '7654321',
+            buyerCNIC: '',
+            buyerBusinessName: 'Test Buyer Pvt Ltd',
+            buyerType: 'Registered',
+            buyerProvince: 'Punjab',
+            buyerAddress: 'Suite 5, Buyer Tower, Lahore',
+            sellerProvince: state.sellerProvince || 'Sindh',
+            invoiceType: 'Sale invoice',
+            invoiceNumber: 'INV-MOCK-001',
+            invoiceDate: today,
+            itemDescription: 'Test product A',
+            hsCode: '9815.9000',
+            quantity: 1,
+            unitPrice: 1000,
+            saleValue: 1000,
+            taxRate: 16,
+            taxAmount: 160,
+            uom: 'Numbers, pieces, units',
+            saleType: 'Services',
+            fixedNotifiedValue: 0,
+            extraTax: 0,
+            furtherTax: 0,
+            totalValueOfSales: 0,
+            stWithheldAtSource: 0,
+            invoiceReferenceNo: '',
+            reasons: '',
+            reasonRemarks: '',
+            petroleumLevyOn: '',
+            sroScheduleNo: 'ICTO TABLE II',
+            sroItemSerialNo: '1(i)',
+          },
+        ],
+      },
+    });
+    dispatch({ type: 'RECALCULATE_TOTALS' });
+    setSuccess('Mock data filled. You can now Validate and Submit to FBR.');
+  }
+
   async function saveDraft() {
     setSaving(true);
     setGlobalError('');
@@ -159,20 +249,42 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     }
   }
 
-  async function preparePayload() {
-    if (!submissionId) return;
-    setPreparingPayload(true);
+  async function submitToFbr() {
     setGlobalError('');
+    setSubmittingFbr(true);
     try {
-      const res = await fetch(`/api/company/submissions/${submissionId}/prepare-payload`, { method: 'POST' });
+      // Persist the latest form state first so the server maps fresh data.
+      let sid = submissionId;
+      const saveUrl = sid ? `/api/company/submissions/${sid}` : '/api/company/submissions';
+      const saveMethod = sid ? 'PUT' : 'POST';
+      const saveRes = await fetch(saveUrl, {
+        method: saveMethod,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...state, status: state.status || 'draft' }),
+      });
+      const saveData = await saveRes.json();
+      if (!saveRes.ok) throw new Error(saveData.error || 'Save failed');
+      sid = sid || saveData.submission?._id;
+      if (onSaved) onSaved(saveData.submission);
+
+      const res = await fetch('/api/fbr/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submissionRef: sid }),
+      });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setSuccess('Payload prepared. Submission is ready.');
-      if (onSaved) onSaved(data.submission);
+      if (data.success) {
+        setFbrReceipt(data.receipt);
+        setFbrModalOpen(true);
+      } else {
+        setGlobalError(
+          data?.envelope?.error?.message || data?.error || 'FBR submission failed.'
+        );
+      }
     } catch (err) {
       setGlobalError(err.message);
     } finally {
-      setPreparingPayload(false);
+      setSubmittingFbr(false);
     }
   }
 
@@ -272,6 +384,15 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerNTN', value: picked.registrationNo || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerBusinessName', value: picked.itemDescription || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerType', value: picked.type || '' });
+                // Seed product / value defaults so the row is submittable (editable by user)
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sellerProvince', value: state.sellerProvince || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerProvince', value: state.sellerProvince || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerAddress', value: '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.itemDescription || 'Item' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'uom', value: 'Numbers, pieces, units' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'quantity', value: 1 });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'unitPrice', value: 1000 });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'taxRate', value: 16 });
                 setPickedItem('');
               }}
             >
@@ -286,7 +407,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
       {/* DSI Invoice Table — mirrors Excel rows 4–7+ */}
       <div className="form-card" style={{ padding: '0.5rem', overflowX: 'scroll' }}>
-        <table style={{ borderCollapse: 'collapse', minWidth: '4080px', fontSize: '0.83rem', tableLayout: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', minWidth: '4260px', fontSize: '0.83rem', tableLayout: 'auto' }}>
           <thead>
             <tr style={{ background: 'var(--color-primary)', color: '#fff' }}>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '43px' }}>Sr.</th>
@@ -312,6 +433,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Reason Remarks</th>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '180px' }}>Product Description</th>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Petroleum Levy on</th>
+              <th rowSpan={2} style={{ ...thStyle, minWidth: '180px' }}>Buyer Address</th>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '48px' }}></th>
             </tr>
             <tr style={{ background: 'var(--color-primary)', color: '#fff' }}>
@@ -329,7 +451,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
           <tbody>
             {state.itemList.length === 0 ? (
               <tr>
-                <td colSpan={31} style={{ ...tdStyle, textAlign: 'center', padding: '1.5rem', color: 'var(--color-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                <td colSpan={32} style={{ ...tdStyle, textAlign: 'center', padding: '1.5rem', color: 'var(--color-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
                   Select invoice item from the dropdown above.
                 </td>
               </tr>
@@ -503,6 +625,11 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                   <input className="input" style={ci} value={item.petroleumLevyOn ?? ''} onChange={(e) => upd(index, 'petroleumLevyOn', e.target.value)} placeholder="e.g. Direct Sale" />
                 </td>
 
+                {/* Buyer Address */}
+                <td style={tdStyle}>
+                  <input className="input" style={{ ...ci, minWidth: '174px' }} value={item.buyerAddress ?? ''} onChange={(e) => upd(index, 'buyerAddress', e.target.value)} placeholder="Buyer address" />
+                </td>
+
                 {/* Remove row */}
                 <td style={{ ...tdStyle, textAlign: 'center' }}>
                   <button type="button" className="button button-sm button-danger" onClick={() => dispatch({ type: 'REMOVE_ITEM', index })} title="Remove row" style={{ fontSize: '1.1rem', lineHeight: 1, padding: '1px 8px' }}>−</button>
@@ -523,18 +650,25 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
       {/* Actions */}
       <div className="form-actions">
+        <button type="button" className="button button-ghost" onClick={fillMockData}>
+          Fill Mock Data
+        </button>
         <button type="button" className="button button-ghost" onClick={saveDraft} disabled={saving}>
           {saving ? 'Saving…' : 'Save Draft'}
         </button>
         <button type="button" className="button button-primary" onClick={validate} disabled={validating || !submissionId}>
           {validating ? 'Validating…' : 'Validate'}
         </button>
-        {submissionId && (
-          <button type="button" className="button button-success" onClick={preparePayload} disabled={preparingPayload}>
-            {preparingPayload ? 'Preparing…' : 'Prepare Payload'}
-          </button>
-        )}
+        <button type="button" className="button button-primary" onClick={submitToFbr} disabled={submittingFbr}>
+          {submittingFbr ? 'Submitting to FBR…' : 'Submit to FBR'}
+        </button>
       </div>
+
+      <FbrSuccessModal
+        open={fbrModalOpen}
+        onClose={() => setFbrModalOpen(false)}
+        receipt={fbrReceipt}
+      />
     </div>
   );
 }

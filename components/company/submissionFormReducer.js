@@ -25,6 +25,7 @@ export function submissionFormReducer(state, action) {
           totalValueOfSales: 0, stWithheldAtSource: 0,
           invoiceReferenceNo: '', reasons: '', reasonRemarks: '',
           petroleumLevyOn: '',
+          buyerAddress: '',
           sroScheduleNo: 'ICTO TABLE II', sroItemSerialNo: '1(i)',
         },
       ];
