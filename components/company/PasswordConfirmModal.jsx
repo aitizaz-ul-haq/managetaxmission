@@ -25,8 +25,10 @@ export default function PasswordConfirmModal({
 }) {
   const [password, setPassword] = useState('');
   // Keep the field read-only until the user focuses it. Browsers skip
-  // autofill/credential suggestions on read-only inputs, so this prevents the
-  // password manager from popping up on this re-auth field.
+  // autofill/credential suggestions on read-only inputs, so the password
+  // manager never pops up on this re-auth field. Combined with
+  // autoComplete="new-password" and a non-credential name below, Chrome will
+  // not offer or fill any saved username/password here.
   const [readOnly, setReadOnly] = useState(true);
 
   if (!open) return null;
@@ -55,11 +57,34 @@ export default function PasswordConfirmModal({
           </p>
           <div className="form-group">
             <label>Password</label>
+            {/*
+              Decoy fields absorb any browser autofill so the real password
+              box below is never targeted. They are off-screen (not display:none,
+              which Chrome ignores for autofill) and not focusable.
+            */}
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }}
+              readOnly
+            />
+            <input
+              type="password"
+              name="password"
+              autoComplete="new-password"
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }}
+              readOnly
+            />
             <input
               className="input"
               type="password"
-              name="confirm-password"
-              autoComplete="off"
+              name="mtm-delete-confirm"
+              autoComplete="new-password"
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
@@ -68,7 +93,6 @@ export default function PasswordConfirmModal({
               data-form-type="other"
               readOnly={readOnly}
               value={password}
-              autoFocus
               onFocus={() => setReadOnly(false)}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}

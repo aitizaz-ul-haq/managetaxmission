@@ -12,6 +12,9 @@ export default function FbrRecordsPage() {
   const [lastReceipt, setLastReceipt] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [search, setSearch] = useState('');
+  // Keep the filter read-only until focused so Chrome/password managers skip
+  // autofill suggestions on it (autoComplete="off" alone is often ignored).
+  const [searchReadOnly, setSearchReadOnly] = useState(true);
 
   const [viewing, setViewing] = useState(null);
 
@@ -119,9 +122,17 @@ export default function FbrRecordsPage() {
       <div style={{ marginBottom: '1rem', maxWidth: '360px' }}>
         <input
           className="input"
-          type="search"
+          type="text"
           name="fbr-invoice-filter"
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-form-type="other"
+          readOnly={searchReadOnly}
+          onFocus={() => setSearchReadOnly(false)}
           placeholder="Filter by submission, status, reference, date…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
