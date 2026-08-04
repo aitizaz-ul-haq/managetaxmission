@@ -53,6 +53,8 @@ export default function PasswordConfirmModal({
             <input
               className="input"
               type="password"
+              name="confirm-password"
+              autoComplete="new-password"
               value={password}
               autoFocus
               onChange={(e) => setPassword(e.target.value)}

@@ -92,6 +92,8 @@ export default function CompanyRecordsPage() {
         <input
           className="input"
           type="search"
+          name="submission-filter"
+          autoComplete="off"
           placeholder="Filter by buyer, date, period, or amount…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

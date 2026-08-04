@@ -120,6 +120,8 @@ export default function FbrRecordsPage() {
         <input
           className="input"
           type="search"
+          name="fbr-invoice-filter"
+          autoComplete="off"
           placeholder="Filter by submission, status, reference, date…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
