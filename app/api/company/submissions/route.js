@@ -13,7 +13,7 @@ export async function GET(request) {
     .sort({ createdAt: -1 })
     .lean();
 
-  return NextResponse.json({ submissions });
+  return NextResponse.json({ submissions }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request) {

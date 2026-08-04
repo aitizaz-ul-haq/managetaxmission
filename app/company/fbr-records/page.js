@@ -20,7 +20,7 @@ export default function FbrRecordsPage() {
   const [deleteError, setDeleteError] = useState('');
 
   async function loadReceipts() {
-    const res = await fetch('/api/fbr/receipts');
+    const res = await fetch('/api/fbr/receipts', { cache: 'no-store' });
     const data = await res.json();
     setReceipts(data.receipts || []);
   }
@@ -67,8 +67,10 @@ export default function FbrRecordsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
-      setReceipts((prev) => prev.filter((r) => r._id !== deleteTarget._id));
       setDeleteTarget(null);
+      // Re-fetch the authoritative list so the table always reflects the DB
+      // (never a stale optimistic guess).
+      await loadReceipts();
     } catch (err) {
       setDeleteError(err.message);
     } finally {

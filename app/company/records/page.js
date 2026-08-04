@@ -16,7 +16,7 @@ export default function CompanyRecordsPage() {
   const [deleteError, setDeleteError] = useState('');
 
   async function loadSubmissions() {
-    const res = await fetch('/api/company/submissions');
+    const res = await fetch('/api/company/submissions', { cache: 'no-store' });
     const data = await res.json();
     setSubmissions(data.submissions || []);
   }
@@ -43,8 +43,10 @@ export default function CompanyRecordsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
-      setSubmissions((prev) => prev.filter((s) => s._id !== deleteTarget._id));
       setDeleteTarget(null);
+      // Re-fetch the authoritative list so the table always reflects the DB
+      // (never a stale optimistic guess).
+      await loadSubmissions();
     } catch (err) {
       setDeleteError(err.message);
     } finally {

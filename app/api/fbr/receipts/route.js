@@ -16,5 +16,5 @@ export async function GET(request) {
     .sort({ createdAt: -1 })
     .lean();
 
-  return NextResponse.json({ receipts });
+  return NextResponse.json({ receipts }, { headers: { 'Cache-Control': 'no-store' } });
 }
