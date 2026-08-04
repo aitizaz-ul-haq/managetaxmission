@@ -24,6 +24,10 @@ export default function PasswordConfirmModal({
   onConfirm,
 }) {
   const [password, setPassword] = useState('');
+  // Keep the field read-only until the user focuses it. Browsers skip
+  // autofill/credential suggestions on read-only inputs, so this prevents the
+  // password manager from popping up on this re-auth field.
+  const [readOnly, setReadOnly] = useState(true);
 
   if (!open) return null;
 
@@ -34,6 +38,7 @@ export default function PasswordConfirmModal({
 
   function handleClose() {
     setPassword('');
+    setReadOnly(true);
     onCancel();
   }
 
@@ -54,9 +59,17 @@ export default function PasswordConfirmModal({
               className="input"
               type="password"
               name="confirm-password"
-              autoComplete="new-password"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-form-type="other"
+              readOnly={readOnly}
               value={password}
               autoFocus
+              onFocus={() => setReadOnly(false)}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
               placeholder="Enter your password"
