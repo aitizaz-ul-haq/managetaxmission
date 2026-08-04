@@ -65,6 +65,27 @@ const UOM_OPTIONS = ['', 'NO', 'Numbers, pieces, units', 'Pair'];
 const SRO_SCHEDULES = ['ICTO TABLE II', 'ICTO TABLE I', 'NINTH SCHEDULE', 'SECTION 49'];
 const ITEM_SERIALS = ['1(i)', '1(i)(a)', '100A', '100A((i))'];
 
+/**
+ * Safely parse a fetch Response as JSON. An empty or non-JSON body (e.g. a 405
+ * from a missing route method, a 500/504 with no body, or the dev server
+ * recompiling) would otherwise throw the cryptic
+ * "Failed to execute 'json' on 'Response': Unexpected end of JSON input".
+ * This surfaces the real HTTP status instead.
+ */
+async function readJson(res) {
+  const text = await res.text();
+  if (!text) {
+    throw new Error(
+      `Server returned an empty response (HTTP ${res.status}). Please try again — if it persists, make sure the app and FBR bridge are running.`
+    );
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Server returned an unexpected response (HTTP ${res.status}).`);
+  }
+}
+
 export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const [state, dispatch] = useReducer(
     submissionFormReducer,
@@ -209,7 +230,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...state, status: 'draft' }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) throw new Error(data.error || 'Save failed');
       setSuccess('Draft saved successfully');
       if (onSaved) onSaved(data.submission);
@@ -234,7 +255,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         body: JSON.stringify(state),
       });
       const res = await fetch(`/api/company/submissions/${submissionId}/validate`, { method: 'POST' });
-      const data = await res.json();
+      const data = await readJson(res);
       dispatch({ type: 'SET_VALIDATION_ERRORS', errors: data.errors || [] });
       if (data.valid) {
         setSuccess('Submission validated successfully');
@@ -262,7 +283,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...state, status: state.status || 'draft' }),
       });
-      const saveData = await saveRes.json();
+      const saveData = await readJson(saveRes);
       if (!saveRes.ok) throw new Error(saveData.error || 'Save failed');
       sid = sid || saveData.submission?._id;
       if (onSaved) onSaved(saveData.submission);
@@ -272,7 +293,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ submissionRef: sid }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (data.success) {
         setFbrReceipt(data.receipt);
         setFbrModalOpen(true);
