@@ -168,26 +168,27 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         invoiceType: 'Sale invoice',
         invoiceDate: today,
         invoiceNumber: 'INV-MOCK-001',
-        sellerBusinessName: state.sellerBusinessName || 'Manage Taxmission Test Seller',
-        sellerNTN: state.sellerNTN || '1234567',
-        sellerProvince: state.sellerProvince || 'Sindh',
-        sellerAddress: state.sellerAddress || 'Office 1, Test Plaza, Karachi',
-        buyerBusinessName: 'Test Buyer Pvt Ltd',
-        buyerNTN: '7654321',
-        buyerProvince: 'Punjab',
-        buyerAddress: 'Suite 5, Buyer Tower, Lahore',
-        buyerType: 'Registered',
+        sellerBusinessName: 'MANAGE OUTSOURCE SERVICES (PRIVATE) LIMITED',
+        sellerNTN: 'F443122',
+        sellerProvince: 'Islamabad',
+        sellerAddress: 'Office No. 212, Pakland VISA, I-8 Markaz, Islamabad',
+        buyerBusinessName: 'Walk-in Customer',
+        buyerNTN: '3520212345678',
+        buyerProvince: 'Islamabad',
+        buyerAddress: 'Office 5, Blue Area, Islamabad',
+        buyerType: 'Unregistered',
+        scenarioId: 'SN019',
         validationErrors: [],
         itemList: [
           {
             itemSNo: 1,
-            buyerNTN: '7654321',
+            buyerNTN: '3520212345678',
             buyerCNIC: '',
-            buyerBusinessName: 'Test Buyer Pvt Ltd',
-            buyerType: 'Registered',
-            buyerProvince: 'Punjab',
-            buyerAddress: 'Suite 5, Buyer Tower, Lahore',
-            sellerProvince: state.sellerProvince || 'Sindh',
+            buyerBusinessName: 'Walk-in Customer',
+            buyerType: 'Unregistered',
+            buyerProvince: 'Islamabad',
+            buyerAddress: 'Office 5, Blue Area, Islamabad',
+            sellerProvince: 'Islamabad',
             invoiceType: 'Sale invoice',
             invoiceNumber: 'INV-MOCK-001',
             invoiceDate: today,
@@ -373,6 +374,16 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
           <div className="form-group" style={{ margin: 0 }}>
             <label style={{ fontSize: '0.8rem' }}>Submission Type</label>
             <input className="input" value={state.submissionType} disabled style={{ width: '140px' }} />
+          </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.8rem' }}>FBR Scenario ID <span className="required">*</span></label>
+            <input
+              className="input"
+              value={state.scenarioId || ''}
+              onChange={(e) => set('scenarioId', e.target.value.trim())}
+              style={{ width: '120px' }}
+              placeholder="e.g. SN019"
+            />
           </div>
         </div>
 

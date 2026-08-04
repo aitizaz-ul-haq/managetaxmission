@@ -93,6 +93,7 @@ export const initialFormState = {
   buyerProvince: '',
   buyerAddress: '',
   buyerType: '',
+  scenarioId: 'SN019',
   totalSaleValue: 0,
   totalTaxAmount: 0,
   totalBillAmount: 0,
