@@ -4,6 +4,12 @@ import styles from './SubmissionViewModal.module.css';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleString('en-PK') : '—');
 const show = (v) => (v === undefined || v === null || v === '' ? '—' : v);
+const money = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n)
+    ? n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : show(v);
+};
 
 function Field({ label, value, span }) {
   return (
@@ -11,6 +17,101 @@ function Field({ label, value, span }) {
       <span className="detail-label">{label}</span>
       <span className="detail-value">{show(value)}</span>
     </div>
+  );
+}
+
+/**
+ * Full invoice breakdown (seller, buyer, line items) reconstructed from the
+ * payload sent to FBR; shown on screen and in the printed record.
+ */
+function InvoiceDetails({ inv, reference, fbrItems }) {
+  const items = Array.isArray(inv.items) ? inv.items : [];
+  const statusByRow = {};
+  (fbrItems || []).forEach((s) => {
+    statusByRow[String(s.itemSNo)] = s;
+  });
+
+  return (
+    <>
+      <div className="detail-section">
+        <div className="detail-section-title">Invoice Details</div>
+        <div className="detail-grid">
+          <Field label="FBR Invoice Number" value={reference} />
+          <Field label="Invoice Type" value={inv.invoiceType} />
+          <Field label="Invoice Date" value={inv.invoiceDate} />
+          <Field label="Invoice Ref No" value={inv.invoiceRefNo} />
+          <Field label="Scenario ID" value={inv.scenarioId} />
+        </div>
+      </div>
+
+      <div className="detail-section">
+        <div className="detail-section-title">Seller</div>
+        <div className="detail-grid">
+          <Field label="Business Name" value={inv.sellerBusinessName} />
+          <Field label="NTN / CNIC" value={inv.sellerNTNCNIC} />
+          <Field label="Province" value={inv.sellerProvince} />
+          <Field label="Address" value={inv.sellerAddress} span />
+        </div>
+      </div>
+
+      <div className="detail-section">
+        <div className="detail-section-title">Buyer</div>
+        <div className="detail-grid">
+          <Field label="Business Name" value={inv.buyerBusinessName} />
+          <Field label="NTN / CNIC" value={inv.buyerNTNCNIC} />
+          <Field label="Registration Type" value={inv.buyerRegistrationType} />
+          <Field label="Province" value={inv.buyerProvince} />
+          <Field label="Address" value={inv.buyerAddress} span />
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <div className="detail-section">
+          <div className="detail-section-title">Line Items</div>
+          <div className="table-wrapper">
+            <table className={styles.itemsTable}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>HS Code</th>
+                  <th>Description</th>
+                  <th>Sale Type</th>
+                  <th>Rate</th>
+                  <th>UoM</th>
+                  <th>Qty</th>
+                  <th>Value (Excl. ST)</th>
+                  <th>Sales Tax</th>
+                  <th>Further Tax</th>
+                  <th>Total Value</th>
+                  <th>FBR Invoice No</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => {
+                  const st = statusByRow[String(i + 1)] || {};
+                  return (
+                    <tr key={i}>
+                      <td>{i + 1}</td>
+                      <td>{show(it.hsCode)}</td>
+                      <td>{show(it.productDescription)}</td>
+                      <td>{show(it.saleType)}</td>
+                      <td>{show(it.rate)}</td>
+                      <td>{show(it.uoM)}</td>
+                      <td>{show(it.quantity)}</td>
+                      <td>{money(it.valueSalesExcludingST)}</td>
+                      <td>{money(it.salesTaxApplicable)}</td>
+                      <td>{money(it.furtherTax)}</td>
+                      <td>{money(it.totalValues)}</td>
+                      <td>{show(st.invoiceNo)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -23,6 +124,10 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
     r.fbrResponse?.reference || r.fbrResponse?.invoiceNumber || r.requestId || '—';
 
   const inv = r.invoicePayload || {};
+  const fbrItems =
+    r.fbrResponse?.validationResponse?.invoiceStatuses ||
+    r.fbrResponse?.invoiceStatuses ||
+    [];
 
   return (
     <div className="modal-backdrop" style={{ alignItems: 'center' }} onClick={onClose}>
@@ -64,6 +169,8 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
               </div>
             )}
 
+            <InvoiceDetails inv={inv} reference={reference} fbrItems={fbrItems} />
+
             <div className="detail-section">
               <div className="detail-section-title">FBR Response</div>
               <pre className={styles.jsonBlock}>
@@ -87,17 +194,7 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
               <span>Reference: {reference}</span>
             </div>
 
-            <div className="detail-section">
-              <div className="detail-section-title">Invoice</div>
-              <div className="detail-grid">
-                <Field label="Invoice Type" value={inv.invoiceType} />
-                <Field label="Invoice Ref No" value={inv.invoiceRefNo || reference} />
-                <Field label="Invoice Date" value={inv.invoiceDate} />
-                <Field label="Scenario ID" value={inv.scenarioId} />
-                <Field label="Environment" value={r.environment} />
-                <Field label="Received At" value={fmtDate(r.receivedAt || r.createdAt)} />
-              </div>
-            </div>
+            <InvoiceDetails inv={inv} reference={reference} fbrItems={fbrItems} />
 
             <div className={styles.printFooter}>
               This document was printed by {show(user?.fullName)} on{' '}
