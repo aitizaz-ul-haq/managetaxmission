@@ -103,17 +103,17 @@
   color: var(--color-text);
 }
 
-/* Off-screen rendering of the print document so html2pdf can capture it.
-   Mirrors the @media print reveal rules but stays hidden from the user. */
+/* On-screen rendering of the print document so html2pdf/html2canvas can
+   capture it. Kept at 0,0 (html2canvas fails on off-screen fixed elements)
+   and hidden from the user behind a temporary overlay during capture. */
 .pdfCapture {
   display: block !important;
   position: fixed;
   top: 0;
-  left: -10000px;
+  left: 0;
   width: 794px; /* ~A4 width at 96dpi */
   padding: 32px;
   background: #ffffff;
-  z-index: -1;
 }
 
 .pdfCapture .letterhead {

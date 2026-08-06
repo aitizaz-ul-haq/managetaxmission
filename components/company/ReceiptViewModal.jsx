@@ -136,6 +136,21 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
     const el = printRef.current;
     if (!el || pdfBusy) return;
     setPdfBusy(true);
+    // Cover the screen so the on-screen capture isn't visible to the user.
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      inset: '0',
+      background: '#ffffff',
+      zIndex: '2147483647',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      font: '600 1rem system-ui, sans-serif',
+      color: '#334155',
+    });
+    overlay.textContent = 'Generating PDF…';
+    document.body.appendChild(overlay);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       el.classList.add(styles.pdfCapture);
@@ -154,6 +169,7 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
         .save();
     } finally {
       if (printRef.current) printRef.current.classList.remove(styles.pdfCapture);
+      overlay.remove();
       setPdfBusy(false);
     }
   }
