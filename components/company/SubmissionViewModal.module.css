@@ -103,6 +103,35 @@
   color: var(--color-text);
 }
 
+/* Off-screen rendering of the print document so html2pdf can capture it.
+   Mirrors the @media print reveal rules but stays hidden from the user. */
+.pdfCapture {
+  display: block !important;
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 794px; /* ~A4 width at 96dpi */
+  padding: 32px;
+  background: #ffffff;
+  z-index: -1;
+}
+
+.pdfCapture .letterhead {
+  display: flex !important;
+}
+
+.pdfCapture .printTitle {
+  display: flex !important;
+}
+
+.pdfCapture .letterheadBar {
+  display: block !important;
+}
+
+.pdfCapture .printFooter {
+  display: block !important;
+}
+
 .itemsTable {
   width: 100%;
   border-collapse: collapse;
