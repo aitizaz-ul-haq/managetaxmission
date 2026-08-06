@@ -103,35 +103,6 @@
   color: var(--color-text);
 }
 
-/* On-screen rendering of the print document so html2pdf/html2canvas can
-   capture it. Kept at 0,0 (html2canvas fails on off-screen fixed elements)
-   and hidden from the user behind a temporary overlay during capture. */
-.pdfCapture {
-  display: block !important;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 794px; /* ~A4 width at 96dpi */
-  padding: 32px;
-  background: #ffffff;
-}
-
-.pdfCapture .letterhead {
-  display: flex !important;
-}
-
-.pdfCapture .printTitle {
-  display: flex !important;
-}
-
-.pdfCapture .letterheadBar {
-  display: block !important;
-}
-
-.pdfCapture .printFooter {
-  display: block !important;
-}
-
 .itemsTable {
   width: 100%;
   border-collapse: collapse;

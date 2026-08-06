@@ -1,5 +1,4 @@
 'use client';
-import { useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import styles from './SubmissionViewModal.module.css';
 
@@ -118,8 +117,6 @@ function InvoiceDetails({ inv, reference, fbrItems }) {
 
 export default function ReceiptViewModal({ open, onClose, receipt }) {
   const { user } = useAuth();
-  const printRef = useRef(null);
-  const [pdfBusy, setPdfBusy] = useState(false);
   if (!open || !receipt) return null;
 
   const r = receipt;
@@ -132,48 +129,6 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
     r.fbrResponse?.invoiceStatuses ||
     [];
 
-  async function downloadPdf() {
-    const el = printRef.current;
-    if (!el || pdfBusy) return;
-    setPdfBusy(true);
-    // Cover the screen so the on-screen capture isn't visible to the user.
-    const overlay = document.createElement('div');
-    Object.assign(overlay.style, {
-      position: 'fixed',
-      inset: '0',
-      background: '#ffffff',
-      zIndex: '2147483647',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      font: '600 1rem system-ui, sans-serif',
-      color: '#334155',
-    });
-    overlay.textContent = 'Generating PDF…';
-    document.body.appendChild(overlay);
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      el.classList.add(styles.pdfCapture);
-      // Let the browser paint the now-visible document before capturing.
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      await html2pdf()
-        .set({
-          margin: [10, 10, 10, 10],
-          filename: `FBR-Invoice-${reference}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-        })
-        .from(el)
-        .save();
-    } finally {
-      if (printRef.current) printRef.current.classList.remove(styles.pdfCapture);
-      overlay.remove();
-      setPdfBusy(false);
-    }
-  }
-
   return (
     <div className="modal-backdrop" style={{ alignItems: 'center' }} onClick={onClose}>
       <div className={`modal ${styles.modal} print-area`} onClick={(e) => e.stopPropagation()}>
@@ -182,13 +137,6 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
           <div className={styles.headerActions}>
             <button className="button button-sm button-secondary" onClick={() => window.print()}>
               Print
-            </button>
-            <button
-              className="button button-sm button-secondary"
-              onClick={downloadPdf}
-              disabled={pdfBusy}
-            >
-              {pdfBusy ? 'Generating…' : 'Download PDF'}
             </button>
             <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
           </div>
@@ -231,8 +179,8 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
             </div>
           </div>
 
-          {/* Print-only document (also captured for PDF download) */}
-          <div className={styles.printBody} ref={printRef}>
+          {/* Print-only document */}
+          <div className={styles.printBody}>
             <div className={styles.letterhead}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/images/taxmissionlogo.png" alt="Manage Taxmission" className={styles.letterheadLogo} />
