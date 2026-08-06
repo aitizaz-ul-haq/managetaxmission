@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import connectDB from '../../../../lib/mongodb';
 import FbrReceipt from '../../../../models/FbrReceipt';
 import Submission from '../../../../models/Submission';
+import Company from '../../../../models/Company';
 import { requireCompanyUser } from '../../../../lib/auth/requireCompanyUser';
 import { submitInvoice } from '../../../../lib/fbr/bridgeClient';
 import { buildExampleInvoice } from '../../../../lib/fbr/exampleInvoice';
@@ -50,7 +51,11 @@ export async function POST(request) {
 
   const submissionId = body.submissionId || String(submissionDoc?._id || randomUUID());
 
-  const { ok, status, envelope } = await submitInvoice({ submissionId, invoice });
+  // Attach this company's own FBR token so FBR accepts the seller/token pairing.
+  const company = await Company.findById(user.companyId).select('fbrSandboxToken').lean();
+  const fbrToken = company?.fbrSandboxToken || undefined;
+
+  const { ok, status, envelope } = await submitInvoice({ submissionId, invoice, fbrToken });
 
   const receipt = await FbrReceipt.create({
     companyId: user.companyId,

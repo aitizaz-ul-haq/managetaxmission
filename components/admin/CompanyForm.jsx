@@ -15,6 +15,7 @@ const emptyForm = {
   incomeTaxStatus: '', salesTaxStatus: '',
   companyName: '', legalName: '', ntn: '', strn: '', province: '',
   email: '', cell: '', address: '',
+  fbrSandboxToken: '',
   branches: [{ ...emptyBranch }],
   accountant: { ...emptyAccountant },
   supervisor: { ...emptySupervisor },
@@ -180,6 +181,10 @@ export default function CompanyForm({ initialData, onSave, onCancel }) {
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
             <label>Category</label>
             <textarea className="textarea" value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="e.g. Company formed and registered under the Companies Ordinance, 1984…" />
+          </div>
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <label>FBR Sandbox Token</label>
+            <input className="input" value={form.fbrSandboxToken} onChange={(e) => set('fbrSandboxToken', e.target.value.trim())} placeholder="Token issued by FBR for this company's NTN" autoComplete="off" />
           </div>
         </div>
       </div>

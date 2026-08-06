@@ -33,6 +33,10 @@ const CompanySchema = new mongoose.Schema(
     email: { type: String, default: '', trim: true },
     cell: { type: String, default: '', trim: true },
 
+    // FBR sandbox token — issued per seller NTN by FBR. Attached to this company's
+    // invoices when calling the bridge so FBR accepts the seller/token pairing.
+    fbrSandboxToken: { type: String, default: '', trim: true },
+
     // Business / branches
     branches: { type: [BranchSchema], default: [] },
 
