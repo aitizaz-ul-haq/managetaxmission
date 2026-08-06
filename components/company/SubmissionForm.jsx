@@ -156,10 +156,32 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const set = (field, value) => dispatch({ type: 'SET_FIELD', field, value });
   const upd = (index, field, value) => dispatch({ type: 'UPDATE_ITEM', index, field, value });
 
-  function fillMockData() {
+  async function fillMockData() {
     setGlobalError('');
     setSuccess('');
     const today = new Date().toISOString().split('T')[0];
+
+    // Pull the seller details from the currently logged-in company's profile so
+    // the mock data matches whichever company is submitting (not a hard-coded one).
+    let company = null;
+    try {
+      const res = await fetch('/api/company/profile');
+      const data = await readJson(res);
+      company = data.company || null;
+    } catch (err) {
+      setGlobalError(`Could not load company profile for mock data: ${err.message}`);
+      return;
+    }
+    if (!company) {
+      setGlobalError('Could not load company profile for mock data. Please try again.');
+      return;
+    }
+
+    const sellerBusinessName = company.legalName || company.companyName || '';
+    const sellerNTN = company.ntn || '';
+    const sellerProvince = company.province || '';
+    const sellerAddress = company.address || '';
+
     dispatch({
       type: 'LOAD_DRAFT',
       data: {
@@ -168,13 +190,13 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         invoiceType: 'Sale invoice',
         invoiceDate: today,
         invoiceNumber: 'INV-MOCK-001',
-        sellerBusinessName: 'MANAGE OUTSOURCE SERVICES (PRIVATE) LIMITED',
-        sellerNTN: 'F443122',
-        sellerProvince: 'Islamabad',
-        sellerAddress: 'Office No. 212, Pakland VISA, I-8 Markaz, Islamabad',
+        sellerBusinessName,
+        sellerNTN,
+        sellerProvince,
+        sellerAddress,
         buyerBusinessName: 'Walk-in Customer',
         buyerNTN: '3520212345678',
-        buyerProvince: 'Islamabad',
+        buyerProvince: sellerProvince,
         buyerAddress: 'Office 5, Blue Area, Islamabad',
         buyerType: 'Unregistered',
         scenarioId: 'SN019',
@@ -186,9 +208,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
             buyerCNIC: '',
             buyerBusinessName: 'Walk-in Customer',
             buyerType: 'Unregistered',
-            buyerProvince: 'Islamabad',
+            buyerProvince: sellerProvince,
             buyerAddress: 'Office 5, Blue Area, Islamabad',
-            sellerProvince: 'Islamabad',
+            sellerProvince,
             invoiceType: 'Sale invoice',
             invoiceNumber: 'INV-MOCK-001',
             invoiceDate: today,
@@ -217,7 +239,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       },
     });
     dispatch({ type: 'RECALCULATE_TOTALS' });
-    setSuccess('Mock data filled. You can now Validate and Submit to FBR.');
+    setSuccess('Mock data filled from your company profile. You can now Validate and Submit to FBR.');
   }
 
   async function saveDraft() {
