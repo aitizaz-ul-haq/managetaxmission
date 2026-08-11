@@ -56,7 +56,7 @@ const ci = {
 };
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const PROVINCES = ['Islamabad','Punjab','Sindh','KPK','Balochistan','AJK','Gilgit-Baltistan'];
+const PROVINCES = ['Capital Territory','Punjab','Sindh','KPK','Balochistan','AJK','Gilgit-Baltistan'];
 const DOCUMENT_TYPES = ['Sale invoice', 'Credit Note', 'Debit Note', 'STWH'];
 const HS_CODES = ['9815.9000', '9816.0000', '9817.0000', '9817.1000'];
 const SALE_TYPES = ['Services', 'Services (FED in ST Mode)', 'Goods (FED in ST Mode)', 'Goods at Reduced Rate'];
@@ -441,8 +441,8 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 // Seed product / value defaults so the row is submittable (editable by user)
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sellerProvince', value: state.sellerProvince || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerProvince', value: state.sellerProvince || '' });
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerAddress', value: '' });
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.itemDescription || 'Item' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerAddress', value: picked.buyerAddress || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.productDescription || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'uom', value: 'Numbers, pieces, units' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'quantity', value: 1 });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'unitPrice', value: 1000 });

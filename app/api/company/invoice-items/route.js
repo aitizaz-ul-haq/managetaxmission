@@ -23,7 +23,7 @@ export async function POST(request) {
   const { error, user } = await requireCompanyUser(request);
   if (error) return error;
 
-  const { registrationNo, itemDescription, type } = await request.json();
+  const { registrationNo, itemDescription, productDescription, buyerAddress, type } = await request.json();
 
   if (!registrationNo?.trim()) {
     return NextResponse.json({ error: 'Registration No is required' }, { status: 400 });
@@ -52,6 +52,8 @@ export async function POST(request) {
     createdBy: user.userId,
     registrationNo: registrationNo.trim(),
     itemDescription: itemDescription.trim(),
+    productDescription: productDescription?.trim() || '',
+    buyerAddress: buyerAddress?.trim() || '',
     type: itemType,
   });
 

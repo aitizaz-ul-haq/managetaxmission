@@ -22,6 +22,8 @@ export default function InvoiceItemsPage() {
   const [loading, setLoading] = useState(true);
   const [newRegistrationNo, setNewRegistrationNo] = useState('');
   const [newName, setNewName] = useState('');
+  const [newProductDescription, setNewProductDescription] = useState('');
+  const [newBuyerAddress, setNewBuyerAddress] = useState('');
   const [newType, setNewType] = useState('Unregistered');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +34,8 @@ export default function InvoiceItemsPage() {
   const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
   const [editRegistrationNo, setEditRegistrationNo] = useState('');
   const [editName, setEditName] = useState('');
+  const [editProductDescription, setEditProductDescription] = useState('');
+  const [editBuyerAddress, setEditBuyerAddress] = useState('');
   const [editType, setEditType] = useState('Unregistered');
   const [modalSaving, setModalSaving] = useState(false);
   const [modalError, setModalError] = useState('');
@@ -57,6 +61,8 @@ export default function InvoiceItemsPage() {
     setModalMode('edit');
     setEditRegistrationNo(item.registrationNo || '');
     setEditName(item.itemDescription || '');
+    setEditProductDescription(item.productDescription || '');
+    setEditBuyerAddress(item.buyerAddress || '');
     setEditType(item.type || 'Unregistered');
     setModalError('');
   }
@@ -78,13 +84,15 @@ export default function InvoiceItemsPage() {
         body: JSON.stringify({
           registrationNo: editRegistrationNo.trim(),
           itemDescription: editName.trim(),
+          productDescription: editProductDescription.trim(),
+          buyerAddress: editBuyerAddress.trim(),
           type: editType,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
       setItems((prev) => prev.map((it) => it._id === modalItem._id
-        ? { ...it, registrationNo: editRegistrationNo.trim(), itemDescription: editName.trim(), type: editType }
+        ? { ...it, registrationNo: editRegistrationNo.trim(), itemDescription: editName.trim(), productDescription: editProductDescription.trim(), buyerAddress: editBuyerAddress.trim(), type: editType }
         : it));
       closeModal();
       setSuccess('Item updated successfully');
@@ -108,6 +116,8 @@ export default function InvoiceItemsPage() {
         body: JSON.stringify({
           registrationNo: newRegistrationNo.trim(),
           itemDescription: newName.trim(),
+          productDescription: newProductDescription.trim(),
+          buyerAddress: newBuyerAddress.trim(),
           type: newType,
         }),
       });
@@ -115,6 +125,8 @@ export default function InvoiceItemsPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to save');
       setNewRegistrationNo('');
       setNewName('');
+      setNewProductDescription('');
+      setNewBuyerAddress('');
       setNewType('Unregistered');
       setSuccess('Item saved successfully');
       load();
@@ -155,6 +167,24 @@ export default function InvoiceItemsPage() {
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g. Standard Product, Consulting Service…"
                 required
+              />
+            </div>
+            <div className="form-group">
+              <label>Product Description</label>
+              <input
+                className="input"
+                value={newProductDescription}
+                onChange={(e) => setNewProductDescription(e.target.value)}
+                placeholder="e.g. IT consultancy services"
+              />
+            </div>
+            <div className="form-group">
+              <label>Buyer Address</label>
+              <input
+                className="input"
+                value={newBuyerAddress}
+                onChange={(e) => setNewBuyerAddress(e.target.value)}
+                placeholder="e.g. Office 5, Blue Area, Islamabad"
               />
             </div>
             <div className="form-group">
@@ -203,6 +233,8 @@ export default function InvoiceItemsPage() {
                 <tr>
                   <th>#</th>
                   <th>Name</th>
+                  <th>Product Description</th>
+                  <th>Buyer Address</th>
                   <th>Registration No</th>
                   <th>Type</th>
                   <th>Added</th>
@@ -214,6 +246,8 @@ export default function InvoiceItemsPage() {
                   <tr key={item._id}>
                     <td>{i + 1}</td>
                     <td><strong>{item.itemDescription}</strong></td>
+                    <td>{item.productDescription || '—'}</td>
+                    <td>{item.buyerAddress || '—'}</td>
                     <td>{item.registrationNo}</td>
                     <td>{item.type}</td>
                     <td>{new Date(item.createdAt).toLocaleDateString('en-GB')}</td>
@@ -258,6 +292,14 @@ export default function InvoiceItemsPage() {
                   <span style={valueStyle}>{modalItem.itemDescription}</span>
                 </div>
                 <div style={fieldRow}>
+                  <span style={labelStyle}>Product Description</span>
+                  <span style={valueStyle}>{modalItem.productDescription || '—'}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Buyer Address</span>
+                  <span style={valueStyle}>{modalItem.buyerAddress || '—'}</span>
+                </div>
+                <div style={fieldRow}>
                   <span style={labelStyle}>Registration No</span>
                   <span style={valueStyle}>{modalItem.registrationNo}</span>
                 </div>
@@ -287,6 +329,22 @@ export default function InvoiceItemsPage() {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     autoFocus
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Product Description</label>
+                  <input
+                    className="input"
+                    value={editProductDescription}
+                    onChange={(e) => setEditProductDescription(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Buyer Address</label>
+                  <input
+                    className="input"
+                    value={editBuyerAddress}
+                    onChange={(e) => setEditBuyerAddress(e.target.value)}
                   />
                 </div>
                 <div className="form-group">

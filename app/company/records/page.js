@@ -61,8 +61,8 @@ export default function CompanyRecordsPage() {
     const q = search.trim().toLowerCase();
     if (!q) return submitted;
     return submitted.filter((s) => {
-      const buyer = s.buyerBusinessName || s.itemList?.[0]?.buyerBusinessName || '';
-      const buyerId = s.buyerNTN || s.buyerCNIC || s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || '';
+      const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '';
+      const buyerId = s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '';
       const submittedOn = fmtDate(s.submittedAt || s.updatedAt);
       const period = `${s.taxPeriodMonth}/${s.taxPeriodYear}`;
       const items = String(s.itemList?.length || 0);
@@ -130,9 +130,9 @@ export default function CompanyRecordsPage() {
               </thead>
               <tbody>
                 {filtered.map((s) => {
-                  const buyer = s.buyerBusinessName || s.itemList?.[0]?.buyerBusinessName || '—';
+                  const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '—';
                   const buyerId =
-                    s.buyerNTN || s.buyerCNIC || s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || '—';
+                    s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '—';
                   return (
                     <tr key={s._id}>
                       <td>{fmtDate(s.submittedAt || s.updatedAt)}</td>

@@ -62,7 +62,12 @@ export async function GET(request) {
       { $match: { companyId: objectId } },
       {
         $group: {
-          _id: { $ifNull: ['$buyerBusinessName', 'Unknown'] },
+          _id: {
+            $ifNull: [
+              { $arrayElemAt: ['$itemList.buyerBusinessName', 0] },
+              { $ifNull: ['$buyerBusinessName', 'Unknown'] },
+            ],
+          },
           count: { $sum: 1 },
           billAmount: { $sum: '$totalBillAmount' },
           taxAmount: { $sum: '$totalTaxAmount' },
@@ -107,7 +112,7 @@ export async function GET(request) {
 
   const recent = recentSubmissions.map((s) => ({
     id: String(s._id),
-    buyer: s.buyerBusinessName || s.itemList?.[0]?.buyerBusinessName || '—',
+    buyer: s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '—',
     period: `${s.taxPeriodMonth}/${s.taxPeriodYear}`,
     billAmount: s.totalBillAmount || 0,
     status: s.status,
