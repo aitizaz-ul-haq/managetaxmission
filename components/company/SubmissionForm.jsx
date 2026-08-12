@@ -439,8 +439,8 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerBusinessName', value: picked.itemDescription || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerType', value: picked.type || '' });
                 // Seed product / value defaults so the row is submittable (editable by user)
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sellerProvince', value: state.sellerProvince || '' });
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerProvince', value: state.sellerProvince || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sellerProvince', value: picked.saleOriginProvinceOfSupplier || state.sellerProvince || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerProvince', value: picked.destinationOfSupply || state.buyerProvince || state.sellerProvince || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerAddress', value: picked.buyerAddress || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.productDescription || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'uom', value: 'Numbers, pieces, units' });

@@ -24,6 +24,8 @@ export default function InvoiceItemsPage() {
   const [newName, setNewName] = useState('');
   const [newProductDescription, setNewProductDescription] = useState('');
   const [newBuyerAddress, setNewBuyerAddress] = useState('');
+  const [newSaleOriginProvinceOfSupplier, setNewSaleOriginProvinceOfSupplier] = useState('');
+  const [newDestinationOfSupply, setNewDestinationOfSupply] = useState('');
   const [newType, setNewType] = useState('Unregistered');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -36,9 +38,12 @@ export default function InvoiceItemsPage() {
   const [editName, setEditName] = useState('');
   const [editProductDescription, setEditProductDescription] = useState('');
   const [editBuyerAddress, setEditBuyerAddress] = useState('');
+  const [editSaleOriginProvinceOfSupplier, setEditSaleOriginProvinceOfSupplier] = useState('');
+  const [editDestinationOfSupply, setEditDestinationOfSupply] = useState('');
   const [editType, setEditType] = useState('Unregistered');
   const [modalSaving, setModalSaving] = useState(false);
   const [modalError, setModalError] = useState('');
+  const PROVINCE_OPTIONS = ['Capital Territory', 'Punjab', 'Sindh', 'KPK', 'Balochistan', 'AJK', 'Gilgit-Baltistan'];
 
   const load = useCallback(() => {
     setLoading(true);
@@ -63,6 +68,8 @@ export default function InvoiceItemsPage() {
     setEditName(item.itemDescription || '');
     setEditProductDescription(item.productDescription || '');
     setEditBuyerAddress(item.buyerAddress || '');
+    setEditSaleOriginProvinceOfSupplier(item.saleOriginProvinceOfSupplier || '');
+    setEditDestinationOfSupply(item.destinationOfSupply || '');
     setEditType(item.type || 'Unregistered');
     setModalError('');
   }
@@ -86,13 +93,24 @@ export default function InvoiceItemsPage() {
           itemDescription: editName.trim(),
           productDescription: editProductDescription.trim(),
           buyerAddress: editBuyerAddress.trim(),
+          saleOriginProvinceOfSupplier: editSaleOriginProvinceOfSupplier,
+          destinationOfSupply: editDestinationOfSupply,
           type: editType,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
       setItems((prev) => prev.map((it) => it._id === modalItem._id
-        ? { ...it, registrationNo: editRegistrationNo.trim(), itemDescription: editName.trim(), productDescription: editProductDescription.trim(), buyerAddress: editBuyerAddress.trim(), type: editType }
+        ? {
+            ...it,
+            registrationNo: editRegistrationNo.trim(),
+            itemDescription: editName.trim(),
+            productDescription: editProductDescription.trim(),
+            buyerAddress: editBuyerAddress.trim(),
+            saleOriginProvinceOfSupplier: editSaleOriginProvinceOfSupplier,
+            destinationOfSupply: editDestinationOfSupply,
+            type: editType,
+          }
         : it));
       closeModal();
       setSuccess('Item updated successfully');
@@ -118,6 +136,8 @@ export default function InvoiceItemsPage() {
           itemDescription: newName.trim(),
           productDescription: newProductDescription.trim(),
           buyerAddress: newBuyerAddress.trim(),
+          saleOriginProvinceOfSupplier: newSaleOriginProvinceOfSupplier,
+          destinationOfSupply: newDestinationOfSupply,
           type: newType,
         }),
       });
@@ -127,6 +147,8 @@ export default function InvoiceItemsPage() {
       setNewName('');
       setNewProductDescription('');
       setNewBuyerAddress('');
+      setNewSaleOriginProvinceOfSupplier('');
+      setNewDestinationOfSupply('');
       setNewType('Unregistered');
       setSuccess('Item saved successfully');
       load();
@@ -198,6 +220,28 @@ export default function InvoiceItemsPage() {
               />
             </div>
             <div className="form-group">
+              <label>Sale Origin Province of Supplier</label>
+              <select
+                className="select"
+                value={newSaleOriginProvinceOfSupplier}
+                onChange={(e) => setNewSaleOriginProvinceOfSupplier(e.target.value)}
+              >
+                <option value="">Select province</option>
+                {PROVINCE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Destination of Supply</label>
+              <select
+                className="select"
+                value={newDestinationOfSupply}
+                onChange={(e) => setNewDestinationOfSupply(e.target.value)}
+              >
+                <option value="">Select province</option>
+                {PROVINCE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
               <label>Type <span className="required">*</span></label>
               <select
                 className="select"
@@ -235,6 +279,8 @@ export default function InvoiceItemsPage() {
                   <th>Name</th>
                   <th>Product Description</th>
                   <th>Buyer Address</th>
+                  <th>Sale Origin Province</th>
+                  <th>Destination of Supply</th>
                   <th>Registration No</th>
                   <th>Type</th>
                   <th>Added</th>
@@ -248,6 +294,8 @@ export default function InvoiceItemsPage() {
                     <td><strong>{item.itemDescription}</strong></td>
                     <td>{item.productDescription || '—'}</td>
                     <td>{item.buyerAddress || '—'}</td>
+                    <td>{item.saleOriginProvinceOfSupplier || '—'}</td>
+                    <td>{item.destinationOfSupply || '—'}</td>
                     <td>{item.registrationNo}</td>
                     <td>{item.type}</td>
                     <td>{new Date(item.createdAt).toLocaleDateString('en-GB')}</td>
@@ -300,6 +348,14 @@ export default function InvoiceItemsPage() {
                   <span style={valueStyle}>{modalItem.buyerAddress || '—'}</span>
                 </div>
                 <div style={fieldRow}>
+                  <span style={labelStyle}>Sale Origin Province of Supplier</span>
+                  <span style={valueStyle}>{modalItem.saleOriginProvinceOfSupplier || '—'}</span>
+                </div>
+                <div style={fieldRow}>
+                  <span style={labelStyle}>Destination of Supply</span>
+                  <span style={valueStyle}>{modalItem.destinationOfSupply || '—'}</span>
+                </div>
+                <div style={fieldRow}>
                   <span style={labelStyle}>Registration No</span>
                   <span style={valueStyle}>{modalItem.registrationNo}</span>
                 </div>
@@ -346,6 +402,28 @@ export default function InvoiceItemsPage() {
                     value={editBuyerAddress}
                     onChange={(e) => setEditBuyerAddress(e.target.value)}
                   />
+                </div>
+                <div className="form-group">
+                  <label>Sale Origin Province of Supplier</label>
+                  <select
+                    className="select"
+                    value={editSaleOriginProvinceOfSupplier}
+                    onChange={(e) => setEditSaleOriginProvinceOfSupplier(e.target.value)}
+                  >
+                    <option value="">Select province</option>
+                    {PROVINCE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Destination of Supply</label>
+                  <select
+                    className="select"
+                    value={editDestinationOfSupply}
+                    onChange={(e) => setEditDestinationOfSupply(e.target.value)}
+                  >
+                    <option value="">Select province</option>
+                    {PROVINCE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Registration No <span className="required">*</span></label>

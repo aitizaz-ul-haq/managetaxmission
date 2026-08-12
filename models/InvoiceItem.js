@@ -8,6 +8,8 @@ const InvoiceItemSchema = new mongoose.Schema(
     itemDescription: { type: String, required: true, trim: true },
     productDescription: { type: String, default: '', trim: true },
     buyerAddress: { type: String, default: '', trim: true },
+    saleOriginProvinceOfSupplier: { type: String, default: '', trim: true },
+    destinationOfSupply: { type: String, default: '', trim: true },
     type: {
       type: String,
       enum: ['Unregistered', 'Registered', 'Unrecognised', 'Retail Consumer'],
