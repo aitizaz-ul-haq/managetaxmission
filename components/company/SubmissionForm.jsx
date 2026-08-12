@@ -4,6 +4,7 @@ import { submissionFormReducer, initialFormState } from './submissionFormReducer
 import TotalsCard from './TotalsCard';
 import ValidationErrors from './ValidationErrors';
 import FbrSuccessModal from './FbrSuccessModal';
+import { validateSubmission } from '../../lib/validators/submissionValidator';
 
 /**
  * FBR FIELD GAPS — form inputs still missing (bridge requires/uses them).
@@ -153,11 +154,27 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       .catch(() => {});
   }, []);
 
-  const set = (field, value) => dispatch({ type: 'SET_FIELD', field, value });
-  const upd = (index, field, value) => dispatch({ type: 'UPDATE_ITEM', index, field, value });
+  const clearValidationFeedback = () => {
+    setGlobalError('');
+    dispatch({ type: 'SET_VALIDATION_ERRORS', errors: [] });
+  };
+
+  useEffect(() => {
+    clearValidationFeedback();
+  }, [draftData?._id, submissionId]);
+
+  const set = (field, value) => {
+    clearValidationFeedback();
+    dispatch({ type: 'SET_FIELD', field, value });
+  };
+
+  const upd = (index, field, value) => {
+    clearValidationFeedback();
+    dispatch({ type: 'UPDATE_ITEM', index, field, value });
+  };
 
   async function fillMockData() {
-    setGlobalError('');
+    clearValidationFeedback();
     setSuccess('');
     const today = new Date().toISOString().split('T')[0];
 
@@ -244,7 +261,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
   async function saveDraft() {
     setSaving(true);
-    setGlobalError('');
+    clearValidationFeedback();
     try {
       const url = submissionId ? `/api/company/submissions/${submissionId}` : '/api/company/submissions';
       const method = submissionId ? 'PUT' : 'POST';
@@ -264,9 +281,21 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     }
   }
 
+  function ensureAtLeastOneItem() {
+    if (!state.itemList || state.itemList.length === 0) {
+      setGlobalError('No invoice items added. Please add at least one item before validating or submitting.');
+      dispatch({ type: 'SET_VALIDATION_ERRORS', errors: ['No invoice items added. Please add at least one item before validating or submitting.'] });
+      return false;
+    }
+    return true;
+  }
+
   async function validate() {
     if (!submissionId) {
       setGlobalError('Save the draft first before validating');
+      return;
+    }
+    if (!ensureAtLeastOneItem()) {
       return;
     }
     setValidating(true);
@@ -294,6 +323,17 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   }
 
   async function submitToFbr() {
+    if (!ensureAtLeastOneItem()) {
+      return;
+    }
+
+    const localErrors = validateSubmission(state);
+    if (localErrors.length) {
+      dispatch({ type: 'SET_VALIDATION_ERRORS', errors: localErrors });
+      setGlobalError('');
+      return;
+    }
+
     setGlobalError('');
     setSubmittingFbr(true);
     try {
@@ -321,9 +361,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         setFbrReceipt(data.receipt);
         setFbrModalOpen(true);
       } else {
-        setGlobalError(
-          data?.envelope?.error?.message || data?.error || 'FBR submission failed.'
-        );
+        const bridgeMessage = data?.envelope?.error?.message || data?.error || 'FBR submission failed.';
+        dispatch({ type: 'SET_VALIDATION_ERRORS', errors: [bridgeMessage] });
+        setGlobalError(bridgeMessage);
       }
     } catch (err) {
       setGlobalError(err.message);
@@ -340,19 +380,44 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const saleTypeOptions = refData.sale_type || [];
   const hsCodeOptions = refData.hs_code || [];
 
-  const validationStatus =
-    state.validationErrors.length === 0 && submissionId
-      ? 'Valid'
-      : state.validationErrors.length > 0
-      ? 'Invalid'
-      : 'Pending';
+  const validationMessages = state.validationErrors.length
+    ? state.validationErrors
+    : globalError
+      ? [globalError]
+      : [];
 
-  const errorMeta = state.validationErrors.reduce((acc, message) => {
+  const validationStatus =
+    validationMessages.length > 0
+      ? 'Invalid'
+      : submissionId
+        ? 'Valid'
+        : 'Pending';
+
+  const errorMeta = validationMessages.reduce((acc, message) => {
     const itemMatch = message.match(/Item\s+(\d+):\s*(.+)/i);
     if (itemMatch) {
       const rowIndex = Number(itemMatch[1]) - 1;
-      const field = itemMatch[2].toLowerCase();
-      acc.push({ rowIndex, field });
+      const detail = itemMatch[2].trim();
+      const itemFieldMap = {
+        'description': 'itemDescription',
+        'hs code': 'hsCode',
+        'uom': 'uom',
+        'sale origination province of supplier': 'sellerProvince',
+        'destination of supply': 'buyerProvince',
+        'sale type': 'saleType',
+        'quantity': 'quantity',
+        'unit price': 'unitPrice',
+        'tax rate': 'taxRate',
+        'fixed/notified value': 'fixedNotifiedValue',
+        'sro schedule number': 'sroScheduleNo',
+        'sro item serial number': 'sroItemSerialNo',
+        'buyer ntn/cnic': 'buyerNTN',
+        'buyer business name': 'buyerBusinessName',
+        'buyer address': 'buyerAddress',
+      };
+
+      const mappedField = Object.entries(itemFieldMap).find(([key]) => detail.toLowerCase().includes(key))?.[1];
+      acc.push({ rowIndex, field: mappedField || 'row' });
       return acc;
     }
 
@@ -362,6 +427,8 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       'invoice date': 'invoiceDate',
       'seller province': 'sellerProvince',
       'buyer province': 'buyerProvince',
+      'sale origination province of supplier': 'sellerProvince',
+      'destination of supply': 'buyerProvince',
       'seller ntn/cnic': 'sellerNTN',
       'buyer ntn/cnic': 'buyerNTN',
       'seller business name': 'sellerBusinessName',
@@ -376,13 +443,13 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     return acc;
   }, []);
 
-  const hasFieldError = (field) => errorMeta.some((meta) => meta.field === field);
-  const hasRowError = (index) => errorMeta.some((meta) => meta.rowIndex === index);
+  const hasFieldError = (field) => errorMeta.some((meta) => meta.field === field && meta.rowIndex === undefined);
+  const hasRowFieldError = (index, field) => errorMeta.some((meta) => meta.rowIndex === index && meta.field === field);
+  const hasRowError = (index) => errorMeta.some((meta) => meta.rowIndex === index && meta.field && meta.field !== 'row');
 
   return (
     <div>
       {success && <div className="alert alert-success">{success}</div>}
-      {globalError && <div className="alert alert-error">{globalError}</div>}
 
       {/* DSI Header — mirrors Excel rows 1–3 */}
       <div className="form-card" style={{ marginBottom: '1rem' }}>
@@ -469,6 +536,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 if (!val) return;
                 const picked = savedItems.find((s) => s._id === val);
                 if (!picked) return;
+                clearValidationFeedback();
                 const newIndex = state.itemList.length;
                 dispatch({ type: 'ADD_ITEM' });
                 // Particulars of Buyers — auto-filled from saved invoice item
@@ -554,30 +622,33 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               <tr
                 key={index}
                 style={{
-                  background: hasRowError(index)
-                    ? 'rgba(220, 53, 69, 0.06)'
-                    : index % 2 === 0
-                    ? '#fff'
-                    : 'var(--color-bg-alt, #f9fafb)',
-                  boxShadow: hasRowError(index) ? 'inset 0 0 0 1px rgba(220,53,69,0.55)' : 'none',
+                  background: index % 2 === 0 ? '#fff' : 'var(--color-bg-alt, #f9fafb)',
                 }}
               >
                 <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
 
                 {/* Buyer Reg No (NTN) */}
-                <td style={{ ...tdStyle, border: hasRowError(index) ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerNTN') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
                   <input
                     className="input"
-                    style={{ ...ci, borderColor: hasRowError(index) ? '#dc3545' : undefined, boxShadow: hasRowError(index) ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerNTN') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerNTN') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
                     value={item.buyerNTN ?? state.buyerNTN ?? ''}
-                    onChange={(e) => upd(index, 'buyerNTN', e.target.value)}
+                    onChange={(e) => {
+                      upd(index, 'buyerNTN', e.target.value);
+                      if (state.validationErrors.length) clearValidationFeedback();
+                    }}
                     placeholder="NTN / CNIC"
                   />
                 </td>
 
                 {/* Buyer Name */}
-                <td style={tdStyle}>
-                  <input className="input" style={{ ...ci, minWidth: '168px' }} value={item.buyerBusinessName ?? state.buyerBusinessName ?? ''} onChange={(e) => upd(index, 'buyerBusinessName', e.target.value)} />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerBusinessName') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    style={{ ...ci, minWidth: '168px', borderColor: hasRowFieldError(index, 'buyerBusinessName') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerBusinessName') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.buyerBusinessName ?? state.buyerBusinessName ?? ''}
+                    onChange={(e) => upd(index, 'buyerBusinessName', e.target.value)}
+                  />
                 </td>
 
                 {/* Buyer Type */}
@@ -591,24 +662,39 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* Sale Origination Province */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.sellerProvince ?? state.sellerProvince ?? ''} onChange={(e) => upd(index, 'sellerProvince', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sellerProvince') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'sellerProvince') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sellerProvince') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.sellerProvince ?? state.sellerProvince ?? ''}
+                    onChange={(e) => upd(index, 'sellerProvince', e.target.value)}
+                  >
                     <option value="">—</option>
                     {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </td>
 
                 {/* Destination of Supply (Buyer Province) */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.buyerProvince ?? state.buyerProvince ?? ''} onChange={(e) => upd(index, 'buyerProvince', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerProvince') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerProvince') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerProvince') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.buyerProvince ?? state.buyerProvince ?? ''}
+                    onChange={(e) => upd(index, 'buyerProvince', e.target.value)}
+                  >
                     <option value="">—</option>
                     {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </td>
 
                 {/* Document Type */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.invoiceType || 'Sale Invoice'} onChange={(e) => upd(index, 'invoiceType', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'invoiceType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.invoiceType || 'Sale Invoice'}
+                    onChange={(e) => upd(index, 'invoiceType', e.target.value)}
+                  >
                     {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </td>
@@ -619,8 +705,14 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* Document Date */}
-                <td style={tdStyle}>
-                  <input className="input" type="date" style={{ ...ci, minWidth: '156px' }} value={item.invoiceDate ?? state.invoiceDate ?? ''} onChange={(e) => upd(index, 'invoiceDate', e.target.value)} />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceDate') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    type="date"
+                    style={{ ...ci, minWidth: '156px', borderColor: hasRowFieldError(index, 'invoiceDate') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceDate') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.invoiceDate ?? state.invoiceDate ?? ''}
+                    onChange={(e) => upd(index, 'invoiceDate', e.target.value)}
+                  />
                 </td>
 
                 {/* HS Code */}
@@ -631,54 +723,103 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* Sale Type */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.saleType || 'Services'} onChange={(e) => upd(index, 'saleType', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'saleType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'saleType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'saleType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.saleType || 'Services'}
+                    onChange={(e) => upd(index, 'saleType', e.target.value)}
+                  >
                     {SALE_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </td>
 
                 {/* Rate (Tax %) */}
-                <td style={tdStyle}>
-                  <select className="select" style={{ ...ci, minWidth: '70px' }} value={Number(item.taxRate ?? 0)} onChange={(e) => upd(index, 'taxRate', Number(e.target.value))}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'taxRate') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, minWidth: '70px', borderColor: hasRowFieldError(index, 'taxRate') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'taxRate') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={Number(item.taxRate ?? 0)}
+                    onChange={(e) => upd(index, 'taxRate', Number(e.target.value))}
+                  >
                     {RATE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </td>
 
                 {/* Quantity */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '78px' }} value={item.quantity ?? 1} onChange={(e) => upd(index, 'quantity', e.target.value)} min="0.01" step="0.01" />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'quantity') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    type="number"
+                    style={{ ...ci, minWidth: '78px', borderColor: hasRowFieldError(index, 'quantity') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'quantity') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.quantity ?? 1}
+                    onChange={(e) => upd(index, 'quantity', e.target.value)}
+                    min="0.01"
+                    step="0.01"
+                  />
                 </td>
 
                 {/* UoM */}
-                <td style={{ ...tdStyle, border: hasRowError(index) ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'uom') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
                   <select
                     className="select"
-                    style={{ ...ci, borderColor: hasRowError(index) ? '#dc3545' : undefined, boxShadow: hasRowError(index) ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'uom') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'uom') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
                     value={item.uom ?? ''}
-                    onChange={(e) => upd(index, 'uom', e.target.value)}
+                    onChange={(e) => {
+                      upd(index, 'uom', e.target.value);
+                      if (state.validationErrors.length) clearValidationFeedback();
+                    }}
                   >
                     {UOM_OPTIONS.map((o) => <option key={o || 'blank'} value={o}>{o}</option>)}
                   </select>
                 </td>
 
                 {/* Unit Price */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.unitPrice ?? 0} onChange={(e) => upd(index, 'unitPrice', e.target.value)} min="0" step="0.01" />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'unitPrice') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    type="number"
+                    style={{ ...ci, minWidth: '108px', borderColor: hasRowFieldError(index, 'unitPrice') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'unitPrice') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.unitPrice ?? 0}
+                    onChange={(e) => upd(index, 'unitPrice', e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
                 </td>
 
                 {/* Value of Sales Excl. Tax (auto) */}
                 <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
-                  <input className="input" style={{ ...ci, minWidth: '108px' }} value={(Number(item.saleValue) || 0).toFixed(2)} disabled />
+                  <input
+                    className="input"
+                    style={{ ...ci, minWidth: '108px' }}
+                    value={(Number(item.saleValue) || 0).toFixed(2)}
+                    readOnly
+                    aria-readonly="true"
+                  />
                 </td>
 
                 {/* Sales Tax / FED (auto) */}
                 <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
-                  <input className="input" style={{ ...ci, minWidth: '108px' }} value={(Number(item.taxAmount) || 0).toFixed(2)} disabled />
+                  <input
+                    className="input"
+                    style={{ ...ci, minWidth: '108px' }}
+                    value={(Number(item.taxAmount) || 0).toFixed(2)}
+                    readOnly
+                    aria-readonly="true"
+                  />
                 </td>
 
                 {/* Fixed / Notified Value */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.fixedNotifiedValue ?? 0} onChange={(e) => upd(index, 'fixedNotifiedValue', e.target.value)} min="0" step="0.01" />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'fixedNotifiedValue') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    type="number"
+                    style={{ ...ci, minWidth: '108px', borderColor: hasRowFieldError(index, 'fixedNotifiedValue') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'fixedNotifiedValue') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.fixedNotifiedValue ?? 0}
+                    onChange={(e) => upd(index, 'fixedNotifiedValue', e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
                 </td>
 
                 {/* Extra Tax */}
@@ -702,15 +843,25 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* SRO No. / Schedule No. */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.sroScheduleNo || 'ICTO TABLE II'} onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sroScheduleNo') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'sroScheduleNo') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sroScheduleNo') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.sroScheduleNo || 'ICTO TABLE II'}
+                    onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)}
+                  >
                     {SRO_SCHEDULES.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </td>
 
                 {/* Item S. No. */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.sroItemSerialNo || '1(i)'} onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sroItemSerialNo') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowFieldError(index, 'sroItemSerialNo') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sroItemSerialNo') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.sroItemSerialNo || '1(i)'}
+                    onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)}
+                  >
                     {ITEM_SERIALS.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </td>
@@ -731,8 +882,13 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* Product Description */}
-                <td style={tdStyle}>
-                  <input className="input" style={{ ...ci, minWidth: '174px' }} value={item.itemDescription ?? ''} onChange={(e) => upd(index, 'itemDescription', e.target.value)} />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'itemDescription') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    style={{ ...ci, minWidth: '174px', borderColor: hasRowFieldError(index, 'itemDescription') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'itemDescription') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.itemDescription ?? ''}
+                    onChange={(e) => upd(index, 'itemDescription', e.target.value)}
+                  />
                 </td>
 
                 {/* Petroleum Levy on */}
@@ -741,8 +897,14 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* Buyer Address */}
-                <td style={tdStyle}>
-                  <input className="input" style={{ ...ci, minWidth: '174px' }} value={item.buyerAddress ?? ''} onChange={(e) => upd(index, 'buyerAddress', e.target.value)} placeholder="Buyer address" />
+                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerAddress') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    style={{ ...ci, minWidth: '174px', borderColor: hasRowFieldError(index, 'buyerAddress') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerAddress') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.buyerAddress ?? ''}
+                    onChange={(e) => upd(index, 'buyerAddress', e.target.value)}
+                    placeholder="Buyer address"
+                  />
                 </td>
 
                 {/* Remove row */}
@@ -756,7 +918,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         </table>
       </div>
 
-      <ValidationErrors errors={state.validationErrors} />
+      <ValidationErrors errors={validationMessages} />
 
       {/* Totals */}
       <TotalsCard
@@ -767,14 +929,8 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
       {/* Actions */}
       <div className="form-actions">
-        <button type="button" className="button button-ghost" onClick={fillMockData}>
-          Fill Mock Data
-        </button>
         <button type="button" className="button button-ghost" onClick={saveDraft} disabled={saving}>
           {saving ? 'Saving…' : 'Save Draft'}
-        </button>
-        <button type="button" className="button button-primary" onClick={validate} disabled={validating || !submissionId}>
-          {validating ? 'Validating…' : 'Validate'}
         </button>
         <button type="button" className="button button-primary" onClick={submitToFbr} disabled={submittingFbr}>
           {submittingFbr ? 'Submitting to FBR…' : 'Submit to FBR'}
