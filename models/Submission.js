@@ -42,7 +42,7 @@ const SubmissionSchema = new mongoose.Schema(
   {
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    submissionType: { type: String, default: 'sales_tax_fed' },
+    submissionType: { type: String, default: 'sale_tax_fed' },
     taxPeriodMonth: { type: Number, required: true },
     taxPeriodYear: { type: Number, required: true },
     invoiceType: { type: String, default: '' },

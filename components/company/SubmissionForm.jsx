@@ -186,7 +186,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       type: 'LOAD_DRAFT',
       data: {
         ...state,
-        submissionType: 'sales_tax_fed',
+        submissionType: 'sale_tax_fed',
         invoiceType: 'Sale invoice',
         invoiceDate: today,
         invoiceNumber: 'INV-MOCK-001',
@@ -284,7 +284,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         setSuccess('Submission validated successfully');
         if (onSaved) onSaved(data.submission);
       } else {
-        setGlobalError('Validation failed. Please fix the errors below.');
+        setGlobalError('');
       }
     } catch (err) {
       setGlobalError(err.message);
@@ -347,11 +347,42 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       ? 'Invalid'
       : 'Pending';
 
+  const errorMeta = state.validationErrors.reduce((acc, message) => {
+    const itemMatch = message.match(/Item\s+(\d+):\s*(.+)/i);
+    if (itemMatch) {
+      const rowIndex = Number(itemMatch[1]) - 1;
+      const field = itemMatch[2].toLowerCase();
+      acc.push({ rowIndex, field });
+      return acc;
+    }
+
+    const fieldMap = {
+      'submission type': 'submissionType',
+      'invoice type': 'invoiceType',
+      'invoice date': 'invoiceDate',
+      'seller province': 'sellerProvince',
+      'buyer province': 'buyerProvince',
+      'seller ntn/cnic': 'sellerNTN',
+      'buyer ntn/cnic': 'buyerNTN',
+      'seller business name': 'sellerBusinessName',
+      'seller address': 'sellerAddress',
+      'buyer business name': 'buyerBusinessName',
+      'buyer address': 'buyerAddress',
+      'fbr scenario id': 'scenarioId',
+    };
+
+    const match = Object.entries(fieldMap).find(([key]) => message.toLowerCase().includes(key));
+    if (match) acc.push({ field: match[1] });
+    return acc;
+  }, []);
+
+  const hasFieldError = (field) => errorMeta.some((meta) => meta.field === field);
+  const hasRowError = (index) => errorMeta.some((meta) => meta.rowIndex === index);
+
   return (
     <div>
       {success && <div className="alert alert-success">{success}</div>}
       {globalError && <div className="alert alert-error">{globalError}</div>}
-      <ValidationErrors errors={state.validationErrors} />
 
       {/* DSI Header — mirrors Excel rows 1–3 */}
       <div className="form-card" style={{ marginBottom: '1rem' }}>
@@ -369,7 +400,13 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
           <div className="form-group" style={{ margin: 0 }}>
             <label style={{ fontSize: '0.8rem' }}>Seller Registration No. <span className="required">*</span></label>
-            <input className="input" value={state.sellerNTN} onChange={(e) => set('sellerNTN', e.target.value)} style={{ width: '160px' }} placeholder="e.g. 1234567-8" />
+            <input
+              className="input"
+              value={state.sellerNTN}
+              onChange={(e) => set('sellerNTN', e.target.value)}
+              style={{ width: '160px', borderColor: hasFieldError('sellerNTN') ? '#dc3545' : undefined, boxShadow: hasFieldError('sellerNTN') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+              placeholder="e.g. 1234567-8"
+            />
           </div>
           <div className="form-group" style={{ margin: 0 }}>
             <label style={{ fontSize: '0.8rem' }}>Tax Period <span className="required">*</span></label>
@@ -403,7 +440,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               className="input"
               value={state.scenarioId || ''}
               onChange={(e) => set('scenarioId', e.target.value.trim())}
-              style={{ width: '120px' }}
+              style={{ width: '120px', borderColor: hasFieldError('scenarioId') ? '#dc3545' : undefined, boxShadow: hasFieldError('scenarioId') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
               placeholder="e.g. SN019"
             />
           </div>
@@ -437,16 +474,19 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 // Particulars of Buyers — auto-filled from saved invoice item
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerNTN', value: picked.registrationNo || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerBusinessName', value: picked.itemDescription || '' });
-                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerType', value: picked.type || '' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerType', value: picked.type || 'Unregistered' });
                 // Seed product / value defaults so the row is submittable (editable by user)
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sellerProvince', value: picked.saleOriginProvinceOfSupplier || state.sellerProvince || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerProvince', value: picked.destinationOfSupply || state.buyerProvince || state.sellerProvince || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'buyerAddress', value: picked.buyerAddress || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'itemDescription', value: picked.productDescription || '' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'uom', value: 'Numbers, pieces, units' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'saleType', value: 'Services' });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'quantity', value: 1 });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'unitPrice', value: 1000 });
                 dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'taxRate', value: 16 });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sroScheduleNo', value: 'ICTO TABLE II' });
+                dispatch({ type: 'UPDATE_ITEM', index: newIndex, field: 'sroItemSerialNo', value: '1(i)' });
                 setPickedItem('');
               }}
             >
@@ -511,12 +551,28 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               </tr>
             ) : (
               state.itemList.map((item, index) => (
-              <tr key={index} style={{ background: index % 2 === 0 ? '#fff' : 'var(--color-bg-alt, #f9fafb)' }}>
+              <tr
+                key={index}
+                style={{
+                  background: hasRowError(index)
+                    ? 'rgba(220, 53, 69, 0.06)'
+                    : index % 2 === 0
+                    ? '#fff'
+                    : 'var(--color-bg-alt, #f9fafb)',
+                  boxShadow: hasRowError(index) ? 'inset 0 0 0 1px rgba(220,53,69,0.55)' : 'none',
+                }}
+              >
                 <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
 
                 {/* Buyer Reg No (NTN) */}
-                <td style={tdStyle}>
-                  <input className="input" style={ci} value={item.buyerNTN ?? state.buyerNTN ?? ''} onChange={(e) => upd(index, 'buyerNTN', e.target.value)} placeholder="NTN / CNIC" />
+                <td style={{ ...tdStyle, border: hasRowError(index) ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <input
+                    className="input"
+                    style={{ ...ci, borderColor: hasRowError(index) ? '#dc3545' : undefined, boxShadow: hasRowError(index) ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.buyerNTN ?? state.buyerNTN ?? ''}
+                    onChange={(e) => upd(index, 'buyerNTN', e.target.value)}
+                    placeholder="NTN / CNIC"
+                  />
                 </td>
 
                 {/* Buyer Name */}
@@ -552,7 +608,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
                 {/* Document Type */}
                 <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.invoiceType || 'Sale invoice'} onChange={(e) => upd(index, 'invoiceType', e.target.value)}>
+                  <select className="select" style={ci} value={item.invoiceType || 'Sale Invoice'} onChange={(e) => upd(index, 'invoiceType', e.target.value)}>
                     {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </td>
@@ -594,8 +650,13 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 </td>
 
                 {/* UoM */}
-                <td style={tdStyle}>
-                  <select className="select" style={{ ...ci, minWidth: '82px' }} value={item.uom ?? ''} onChange={(e) => upd(index, 'uom', e.target.value)}>
+                <td style={{ ...tdStyle, border: hasRowError(index) ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                  <select
+                    className="select"
+                    style={{ ...ci, borderColor: hasRowError(index) ? '#dc3545' : undefined, boxShadow: hasRowError(index) ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                    value={item.uom ?? ''}
+                    onChange={(e) => upd(index, 'uom', e.target.value)}
+                  >
                     {UOM_OPTIONS.map((o) => <option key={o || 'blank'} value={o}>{o}</option>)}
                   </select>
                 </td>
@@ -694,6 +755,8 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
           </tbody>
         </table>
       </div>
+
+      <ValidationErrors errors={state.validationErrors} />
 
       {/* Totals */}
       <TotalsCard

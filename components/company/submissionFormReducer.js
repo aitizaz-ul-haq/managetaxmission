@@ -16,11 +16,11 @@ export function submissionFormReducer(state, action) {
         ...state.itemList,
         {
           itemSNo: state.itemList.length + 1,
-          buyerNTN: '', buyerCNIC: '', buyerBusinessName: '', buyerType: '', buyerProvince: '',
+          buyerNTN: '', buyerCNIC: '', buyerBusinessName: '', buyerType: 'Unregistered', buyerProvince: '',
           sellerProvince: '',
-          invoiceType: 'Sale invoice', invoiceNumber: '', invoiceDate: new Date().toISOString().split('T')[0],
+          invoiceType: 'Sale Invoice', invoiceNumber: '', invoiceDate: new Date().toISOString().split('T')[0],
           itemDescription: '', hsCode: '9815.9000', quantity: 1, unitPrice: 0,
-          saleValue: 0, taxRate: 0, taxAmount: 0, uom: '', saleType: 'Services',
+          saleValue: 0, taxRate: 16, taxAmount: 0, uom: 'Numbers, pieces, units', saleType: 'Services',
           fixedNotifiedValue: 0, extraTax: 0, furtherTax: 0,
           totalValueOfSales: 0, stWithheldAtSource: 0,
           invoiceReferenceNo: '', reasons: '', reasonRemarks: '',
@@ -77,7 +77,7 @@ export function submissionFormReducer(state, action) {
 }
 
 export const initialFormState = {
-  submissionType: 'sales_tax_fed',
+  submissionType: 'sale_tax_fed',
   taxPeriodMonth: new Date().getMonth() + 1,
   taxPeriodYear: new Date().getFullYear(),
   invoiceType: '',
