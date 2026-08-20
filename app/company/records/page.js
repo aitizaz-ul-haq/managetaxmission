@@ -8,6 +8,8 @@ export default function CompanyRecordsPage() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 12;
 
   const [viewing, setViewing] = useState(null);
 
@@ -57,10 +59,20 @@ export default function CompanyRecordsPage() {
   const fmtMoney = (n) => (n || 0).toLocaleString('en-PK', { minimumFractionDigits: 2 });
   const fmtDate = (d) => (d ? new Date(d).toLocaleString('en-PK') : '—');
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   const filtered = useMemo(() => {
+    const sorted = [...submitted].sort((a, b) => {
+      const aTime = new Date(a.submittedAt || a.updatedAt || 0).getTime();
+      const bTime = new Date(b.submittedAt || b.updatedAt || 0).getTime();
+      return bTime - aTime;
+    });
+
     const q = search.trim().toLowerCase();
-    if (!q) return submitted;
-    return submitted.filter((s) => {
+    if (!q) return sorted;
+    return sorted.filter((s) => {
       const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '';
       const buyerId = s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '';
       const submittedOn = fmtDate(s.submittedAt || s.updatedAt);
@@ -75,6 +87,15 @@ export default function CompanyRecordsPage() {
         .includes(q);
     });
   }, [submitted, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pageRecords = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   return (
     <div className="page-content">
@@ -114,53 +135,87 @@ export default function CompanyRecordsPage() {
               </p>
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Submitted</th>
-                  <th>Period</th>
-                  <th>Buyer</th>
-                  <th>Buyer NTN/CNIC</th>
-                  <th>Items</th>
-                  <th>Sale Value</th>
-                  <th>Tax Amount</th>
-                  <th>Total Bill</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((s) => {
-                  const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '—';
-                  const buyerId =
-                    s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '—';
-                  return (
-                    <tr key={s._id}>
-                      <td>{fmtDate(s.submittedAt || s.updatedAt)}</td>
-                      <td>{s.taxPeriodMonth}/{s.taxPeriodYear}</td>
-                      <td>{buyer}</td>
-                      <td>{buyerId}</td>
-                      <td>{s.itemList?.length || 0}</td>
-                      <td>PKR {fmtMoney(s.totalSaleValue)}</td>
-                      <td>PKR {fmtMoney(s.totalTaxAmount)}</td>
-                      <td>PKR {fmtMoney(s.totalBillAmount)}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
-                          <button className="button button-sm button-secondary" onClick={() => setViewing(s)}>
-                            View
-                          </button>
-                          <button
-                            className="button button-sm button-danger"
-                            onClick={() => { setDeleteError(''); setDeleteTarget(s); }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Submitted</th>
+                    <th>Period</th>
+                    <th>Buyer</th>
+                    <th>Buyer NTN/CNIC</th>
+                    <th>Items</th>
+                    <th>Sale Value</th>
+                    <th>Tax Amount</th>
+                    <th>Total Bill</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRecords.map((s) => {
+                    const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '—';
+                    const buyerId =
+                      s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '—';
+                    return (
+                      <tr key={s._id}>
+                        <td>{fmtDate(s.submittedAt || s.updatedAt)}</td>
+                        <td>{s.taxPeriodMonth}/{s.taxPeriodYear}</td>
+                        <td>{buyer}</td>
+                        <td>{buyerId}</td>
+                        <td>{s.itemList?.length || 0}</td>
+                        <td>PKR {fmtMoney(s.totalSaleValue)}</td>
+                        <td>PKR {fmtMoney(s.totalTaxAmount)}</td>
+                        <td>PKR {fmtMoney(s.totalBillAmount)}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button className="button button-sm button-secondary" onClick={() => setViewing(s)}>
+                              View
+                            </button>
+                            <button
+                              className="button button-sm button-danger"
+                              onClick={() => { setDeleteError(''); setDeleteTarget(s); }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {filtered.length > PAGE_SIZE && (
+                <div className="table-pagination">
+                  <div className="pagination-summary">
+                    Showing {Math.min(pageStart + 1, filtered.length)}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}
+                  </div>
+
+                  <div className="pagination-controls">
+                    <button
+                      type="button"
+                      className="pagination-btn"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                    >
+                      Previous
+                    </button>
+
+                    <span className="pagination-page">
+                      Page {safePage} of {totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="pagination-btn"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

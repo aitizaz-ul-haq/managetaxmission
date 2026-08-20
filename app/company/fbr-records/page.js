@@ -17,6 +17,8 @@ export default function FbrRecordsPage() {
   const [lastReceipt, setLastReceipt] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 12;
   // Keep the filter read-only until focused so Chrome/password managers skip
   // autofill suggestions on it (autoComplete="off" alone is often ignored).
   const [searchReadOnly, setSearchReadOnly] = useState(true);
@@ -88,10 +90,20 @@ export default function FbrRecordsPage() {
 
   const fmt = (d) => (d ? new Date(d).toLocaleString('en-PK') : '—');
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   const filtered = useMemo(() => {
+    const sorted = [...receipts].sort((a, b) => {
+      const aTime = new Date(a.receivedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.receivedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
     const q = search.trim().toLowerCase();
-    if (!q) return receipts;
-    return receipts.filter((r) => {
+    if (!q) return sorted;
+    return sorted.filter((r) => {
       const reference = r.fbrResponse?.reference || r.fbrResponse?.invoiceNumber || r.errorCode || '';
       const status = getFbrInvoiceStatus(r) || (r.success ? 'success' : 'failed');
       const received = fmt(r.receivedAt || r.createdAt);
@@ -101,6 +113,15 @@ export default function FbrRecordsPage() {
         .includes(q);
     });
   }, [receipts, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pageRecords = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   return (
     <div className="page-content">
@@ -158,60 +179,94 @@ export default function FbrRecordsPage() {
               </p>
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Submission ID</th>
-                  <th>Action</th>
-                  <th>Status</th>
-                  <th>Environment</th>
-                  <th>Reference</th>
-                  <th>Received</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => {
-                  const fbrStatus = getFbrInvoiceStatus(r);
-                  const statusLabel = formatFbrStatusLabel(fbrStatus || (r.success ? 'success' : 'failed'));
-                  const statusClass = getFbrStatusBadgeClass(fbrStatus || (r.success ? 'success' : 'failed'));
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Submission ID</th>
+                    <th>Action</th>
+                    <th>Status</th>
+                    <th>Environment</th>
+                    <th>Reference</th>
+                    <th>Received</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRecords.map((r) => {
+                    const fbrStatus = getFbrInvoiceStatus(r);
+                    const statusLabel = formatFbrStatusLabel(fbrStatus || (r.success ? 'success' : 'failed'));
+                    const statusClass = getFbrStatusBadgeClass(fbrStatus || (r.success ? 'success' : 'failed'));
 
-                  return (
-                    <tr key={r._id}>
-                      <td><code>{r.submissionId || '—'}</code></td>
-                      <td>{r.action}</td>
-                      <td>
-                        <span className={`status-badge ${statusClass}`}>
-                          {statusLabel}
-                          {r.mock ? ' (mock)' : ''}
-                        </span>
-                      </td>
-                      <td>{r.environment || '—'}</td>
-                      <td>
-                        {r.fbrResponse?.reference ||
-                          r.fbrResponse?.invoiceNumber ||
-                          r.errorCode ||
-                          '—'}
-                      </td>
-                      <td>{fmt(r.receivedAt || r.createdAt)}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
-                          <button className="button button-sm button-secondary" onClick={() => setViewing(r)}>
-                            View
-                          </button>
-                          <button
-                            className="button button-sm button-danger"
-                            onClick={() => { setDeleteError(''); setDeleteTarget(r); }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr key={r._id}>
+                        <td><code>{r.submissionId || '—'}</code></td>
+                        <td>{r.action}</td>
+                        <td>
+                          <span className={`status-badge ${statusClass}`}>
+                            {statusLabel}
+                            {r.mock ? ' (mock)' : ''}
+                          </span>
+                        </td>
+                        <td>{r.environment || '—'}</td>
+                        <td>
+                          {r.fbrResponse?.reference ||
+                            r.fbrResponse?.invoiceNumber ||
+                            r.errorCode ||
+                            '—'}
+                        </td>
+                        <td>{fmt(r.receivedAt || r.createdAt)}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '0.4rem' }}>
+                            <button className="button button-sm button-secondary" onClick={() => setViewing(r)}>
+                              View
+                            </button>
+                            <button
+                              className="button button-sm button-danger"
+                              onClick={() => { setDeleteError(''); setDeleteTarget(r); }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {filtered.length > PAGE_SIZE && (
+                <div className="table-pagination">
+                  <div className="pagination-summary">
+                    Showing {Math.min(pageStart + 1, filtered.length)}-{Math.min(pageStart + PAGE_SIZE, filtered.length)} of {filtered.length}
+                  </div>
+
+                  <div className="pagination-controls">
+                    <button
+                      type="button"
+                      className="pagination-btn"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                    >
+                      Previous
+                    </button>
+
+                    <span className="pagination-page">
+                      Page {safePage} of {totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="pagination-btn"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
