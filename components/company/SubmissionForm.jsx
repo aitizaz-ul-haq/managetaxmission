@@ -65,6 +65,7 @@ const RATE_OPTIONS = [{ value: 0, label: '0.00%' }, { value: 1, label: '1%' }, {
 const UOM_OPTIONS = ['', 'NO', 'Numbers, pieces, units', 'Pair'];
 const SRO_SCHEDULES = ['ICTO TABLE II', 'ICTO TABLE I', 'NINTH SCHEDULE', 'SECTION 49'];
 const ITEM_SERIALS = ['1(i)', '1(i)(a)', '100A', '100A((i))'];
+const BUYER_TYPE_OPTIONS = ['Registered', 'Unregistered', 'Unregistered Distributor', 'Retail Consumer'];
 
 /**
  * Safely parse a fetch Response as JSON. An empty or non-JSON body (e.g. a 405
@@ -103,9 +104,18 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   const [globalError, setGlobalError] = useState('');
   const [savedItems, setSavedItems] = useState([]);
   const [pickedItem, setPickedItem] = useState('');
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+  const earliestTaxPeriodIso = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`;
   const [taxPeriodDate, setTaxPeriodDate] = useState(
-    () => `${(draftData || initialFormState).taxPeriodYear}-${String((draftData || initialFormState).taxPeriodMonth).padStart(2, '0')}-01`
+    () => `${(draftData || initialFormState).taxPeriodYear}-${String((draftData || initialFormState).taxPeriodMonth).padStart(2, '0')}-01` || todayIso
   );
+
+  useEffect(() => {
+    const selectedDate = `${state.taxPeriodYear}-${String(state.taxPeriodMonth).padStart(2, '0')}-01`;
+    setTaxPeriodDate(selectedDate);
+  }, [state.taxPeriodYear, state.taxPeriodMonth]);
 
   // Auto-populate seller fields from company profile on new submissions
   useEffect(() => {
@@ -373,7 +383,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
   }
 
   const invoiceTypes = refData.invoice_type || [];
-  const buyerTypes = refData.buyer_type || [];
+  const buyerTypes = (refData.buyer_type || []).length
+    ? refData.buyer_type
+    : BUYER_TYPE_OPTIONS.map((value) => ({ _id: value, value, label: value }));
   const provinceOptions = (refData.province || []).map((p) => p.value);
   const allProvinces = provinceOptions.length ? provinceOptions : PROVINCES;
   const uomOptions = refData.uom || [];
@@ -412,8 +424,10 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         'sro schedule number': 'sroScheduleNo',
         'sro item serial number': 'sroItemSerialNo',
         'buyer ntn/cnic': 'buyerNTN',
+        'buyer type': 'buyerType',
         'buyer business name': 'buyerBusinessName',
         'buyer address': 'buyerAddress',
+        'internal document number': 'invoiceNumber',
       };
 
       const mappedField = Object.entries(itemFieldMap).find(([key]) => detail.toLowerCase().includes(key))?.[1];
@@ -425,12 +439,14 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       'submission type': 'submissionType',
       'invoice type': 'invoiceType',
       'invoice date': 'invoiceDate',
+      'invoice number': 'invoiceNumber',
       'seller province': 'sellerProvince',
       'buyer province': 'buyerProvince',
       'sale origination province of supplier': 'sellerProvince',
       'destination of supply': 'buyerProvince',
       'seller ntn/cnic': 'sellerNTN',
       'buyer ntn/cnic': 'buyerNTN',
+      'buyer type': 'buyerType',
       'seller business name': 'sellerBusinessName',
       'seller address': 'sellerAddress',
       'buyer business name': 'buyerBusinessName',
@@ -440,6 +456,9 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
 
     const match = Object.entries(fieldMap).find(([key]) => message.toLowerCase().includes(key));
     if (match) acc.push({ field: match[1] });
+    if (message.toLowerCase().includes('internal document number')) {
+      acc.push({ field: 'invoiceNumber' });
+    }
     return acc;
   }, []);
 
@@ -481,12 +500,22 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               <input
                 className="input"
                 type="date"
-                defaultValue={taxPeriodDate}
+                value={taxPeriodDate}
+                min={earliestTaxPeriodIso}
+                max={todayIso}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (!val) return;
-                  setTaxPeriodDate(val);
                   const [y, m] = val.split('-');
+                  const selectedDate = new Date(`${val}T00:00:00`);
+                  const todayDate = new Date(`${todayIso}T00:00:00`);
+                  if (selectedDate > todayDate) {
+                    const msg = 'Future date cannot be selected. Please choose the current or past date.';
+                    dispatch({ type: 'SET_VALIDATION_ERRORS', errors: [msg] });
+                    setGlobalError(msg);
+                    return;
+                  }
+                  setTaxPeriodDate(val);
                   set('taxPeriodYear', Number(y));
                   set('taxPeriodMonth', Number(m));
                 }}
@@ -619,301 +648,299 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               </tr>
             ) : (
               state.itemList.map((item, index) => (
-              <tr
-                key={index}
-                style={{
-                  background: index % 2 === 0 ? '#fff' : 'var(--color-bg-alt, #f9fafb)',
-                }}
-              >
-                <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
+                <tr
+                  key={index}
+                  style={{
+                    background: index % 2 === 0 ? '#fff' : 'var(--color-bg-alt, #f9fafb)',
+                  }}
+                >
+                  <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
 
-                {/* Buyer Reg No (NTN) */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerNTN') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerNTN') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerNTN') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.buyerNTN ?? state.buyerNTN ?? ''}
-                    onChange={(e) => {
-                      upd(index, 'buyerNTN', e.target.value);
-                      if (state.validationErrors.length) clearValidationFeedback();
-                    }}
-                    placeholder="NTN / CNIC"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerNTN') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerNTN') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerNTN') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.buyerNTN ?? state.buyerNTN ?? ''}
+                      onChange={(e) => {
+                        upd(index, 'buyerNTN', e.target.value);
+                        if (state.validationErrors.length) clearValidationFeedback();
+                      }}
+                      placeholder="NTN / CNIC"
+                    />
+                  </td>
 
-                {/* Buyer Name */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerBusinessName') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    style={{ ...ci, minWidth: '168px', borderColor: hasRowFieldError(index, 'buyerBusinessName') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerBusinessName') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.buyerBusinessName ?? state.buyerBusinessName ?? ''}
-                    onChange={(e) => upd(index, 'buyerBusinessName', e.target.value)}
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerBusinessName') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, minWidth: '168px', borderColor: hasRowFieldError(index, 'buyerBusinessName') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerBusinessName') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.buyerBusinessName ?? state.buyerBusinessName ?? ''}
+                      onChange={(e) => upd(index, 'buyerBusinessName', e.target.value)}
+                    />
+                  </td>
 
-                {/* Buyer Type */}
-                <td style={tdStyle}>
-                  {buyerTypes.length > 0
-                    ? <select className="select" style={ci} value={item.buyerType ?? state.buyerType ?? ''} onChange={(e) => upd(index, 'buyerType', e.target.value)}>
-                        <option value="">—</option>
-                        {buyerTypes.map((t) => <option key={t._id} value={t.value}>{t.label}</option>)}
-                      </select>
-                    : <input className="input" style={ci} value={item.buyerType ?? state.buyerType ?? ''} onChange={(e) => upd(index, 'buyerType', e.target.value)} />}
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.buyerType ?? state.buyerType ?? ''}
+                      onChange={(e) => {
+                        upd(index, 'buyerType', e.target.value);
+                        if (state.validationErrors.length) clearValidationFeedback();
+                      }}
+                    >
+                      <option value="">Select buyer type</option>
+                      {buyerTypes.map((t) => <option key={t._id || t.value} value={t.value}>{t.label || t.value}</option>)}
+                      {item.buyerType && !buyerTypes.some((t) => t.value === item.buyerType) && (
+                        <option value={item.buyerType}>{item.buyerType}</option>
+                      )}
+                    </select>
+                  </td>
 
-                {/* Sale Origination Province */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sellerProvince') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'sellerProvince') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sellerProvince') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.sellerProvince ?? state.sellerProvince ?? ''}
-                    onChange={(e) => upd(index, 'sellerProvince', e.target.value)}
-                  >
-                    <option value="">—</option>
-                    {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sellerProvince') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'sellerProvince') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sellerProvince') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.sellerProvince ?? state.sellerProvince ?? ''}
+                      onChange={(e) => upd(index, 'sellerProvince', e.target.value)}
+                    >
+                      <option value="">—</option>
+                      {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </td>
 
-                {/* Destination of Supply (Buyer Province) */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerProvince') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerProvince') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerProvince') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.buyerProvince ?? state.buyerProvince ?? ''}
-                    onChange={(e) => upd(index, 'buyerProvince', e.target.value)}
-                  >
-                    <option value="">—</option>
-                    {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerProvince') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'buyerProvince') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerProvince') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.buyerProvince ?? state.buyerProvince ?? ''}
+                      onChange={(e) => upd(index, 'buyerProvince', e.target.value)}
+                    >
+                      <option value="">—</option>
+                      {allProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </td>
 
-                {/* Document Type */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'invoiceType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.invoiceType || 'Sale Invoice'}
-                    onChange={(e) => upd(index, 'invoiceType', e.target.value)}
-                  >
-                    {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'invoiceType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.invoiceType || 'Sale Invoice'}
+                      onChange={(e) => upd(index, 'invoiceType', e.target.value)}
+                    >
+                      {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </td>
 
-                {/* Document Number */}
-                <td style={tdStyle}>
-                  <input className="input" style={{ ...ci, minWidth: '150px' }} value={item.invoiceNumber ?? state.invoiceNumber ?? ''} onChange={(e) => upd(index, 'invoiceNumber', e.target.value)} placeholder="INV-..." />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceNumber') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, minWidth: '150px', borderColor: hasRowFieldError(index, 'invoiceNumber') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceNumber') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.invoiceNumber ?? state.invoiceNumber ?? ''}
+                      onChange={(e) => {
+                        upd(index, 'invoiceNumber', e.target.value);
+                        if (state.validationErrors.length) clearValidationFeedback();
+                      }}
+                      placeholder="INV-..."
+                    />
+                  </td>
 
-                {/* Document Date */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceDate') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    type="date"
-                    style={{ ...ci, minWidth: '156px', borderColor: hasRowFieldError(index, 'invoiceDate') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceDate') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.invoiceDate ?? state.invoiceDate ?? ''}
-                    onChange={(e) => upd(index, 'invoiceDate', e.target.value)}
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'invoiceDate') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      type="date"
+                      max={todayIso}
+                      style={{ ...ci, minWidth: '156px', borderColor: hasRowFieldError(index, 'invoiceDate') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'invoiceDate') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.invoiceDate ?? state.invoiceDate ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val && new Date(`${val}T00:00:00`) > new Date(`${todayIso}T00:00:00`)) {
+                          const msg = 'Future date cannot be selected. Please choose the current or past date.';
+                          dispatch({ type: 'SET_VALIDATION_ERRORS', errors: [msg] });
+                          setGlobalError(msg);
+                          return;
+                        }
+                        upd(index, 'invoiceDate', val);
+                      }}
+                    />
+                  </td>
 
-                {/* HS Code */}
-                <td style={tdStyle}>
-                  <select className="select" style={ci} value={item.hsCode || '9815.9000'} onChange={(e) => upd(index, 'hsCode', e.target.value)}>
-                    {HS_CODES.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </td>
+                  <td style={tdStyle}>
+                    <select className="select" style={ci} value={item.hsCode || '9815.9000'} onChange={(e) => upd(index, 'hsCode', e.target.value)}>
+                      {HS_CODES.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </td>
 
-                {/* Sale Type */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'saleType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'saleType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'saleType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.saleType || 'Services'}
-                    onChange={(e) => upd(index, 'saleType', e.target.value)}
-                  >
-                    {SALE_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'saleType') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'saleType') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'saleType') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.saleType || 'Services'}
+                      onChange={(e) => upd(index, 'saleType', e.target.value)}
+                    >
+                      {SALE_TYPES.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </td>
 
-                {/* Rate (Tax %) */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'taxRate') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, minWidth: '70px', borderColor: hasRowFieldError(index, 'taxRate') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'taxRate') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={Number(item.taxRate ?? 0)}
-                    onChange={(e) => upd(index, 'taxRate', Number(e.target.value))}
-                  >
-                    {RATE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'taxRate') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, minWidth: '70px', borderColor: hasRowFieldError(index, 'taxRate') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'taxRate') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={Number(item.taxRate ?? 0)}
+                      onChange={(e) => upd(index, 'taxRate', Number(e.target.value))}
+                    >
+                      {RATE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </td>
 
-                {/* Quantity */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'quantity') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    type="number"
-                    style={{ ...ci, minWidth: '78px', borderColor: hasRowFieldError(index, 'quantity') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'quantity') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.quantity ?? 1}
-                    onChange={(e) => upd(index, 'quantity', e.target.value)}
-                    min="0.01"
-                    step="0.01"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'quantity') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      type="number"
+                      style={{ ...ci, minWidth: '78px', borderColor: hasRowFieldError(index, 'quantity') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'quantity') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.quantity ?? 1}
+                      onChange={(e) => upd(index, 'quantity', e.target.value)}
+                      min="0.01"
+                      step="0.01"
+                    />
+                  </td>
 
-                {/* UoM */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'uom') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'uom') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'uom') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.uom ?? ''}
-                    onChange={(e) => {
-                      upd(index, 'uom', e.target.value);
-                      if (state.validationErrors.length) clearValidationFeedback();
-                    }}
-                  >
-                    {UOM_OPTIONS.map((o) => <option key={o || 'blank'} value={o}>{o}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'uom') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'uom') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'uom') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.uom ?? ''}
+                      onChange={(e) => {
+                        upd(index, 'uom', e.target.value);
+                        if (state.validationErrors.length) clearValidationFeedback();
+                      }}
+                    >
+                      {UOM_OPTIONS.map((o) => <option key={o || 'blank'} value={o}>{o}</option>)}
+                    </select>
+                  </td>
 
-                {/* Unit Price */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'unitPrice') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    type="number"
-                    style={{ ...ci, minWidth: '108px', borderColor: hasRowFieldError(index, 'unitPrice') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'unitPrice') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.unitPrice ?? 0}
-                    onChange={(e) => upd(index, 'unitPrice', e.target.value)}
-                    min="0"
-                    step="0.01"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'unitPrice') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      type="number"
+                      style={{ ...ci, minWidth: '108px', borderColor: hasRowFieldError(index, 'unitPrice') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'unitPrice') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.unitPrice ?? 0}
+                      onChange={(e) => upd(index, 'unitPrice', e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </td>
 
-                {/* Value of Sales Excl. Tax (auto) */}
-                <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
-                  <input
-                    className="input"
-                    style={{ ...ci, minWidth: '108px' }}
-                    value={(Number(item.saleValue) || 0).toFixed(2)}
-                    readOnly
-                    aria-readonly="true"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, minWidth: '108px' }}
+                      value={(Number(item.saleValue) || 0).toFixed(2)}
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </td>
 
-                {/* Sales Tax / FED (auto) */}
-                <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
-                  <input
-                    className="input"
-                    style={{ ...ci, minWidth: '108px' }}
-                    value={(Number(item.taxAmount) || 0).toFixed(2)}
-                    readOnly
-                    aria-readonly="true"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, background: 'var(--color-bg-alt, #eef2f7)' }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, minWidth: '108px' }}
+                      value={(Number(item.taxAmount) || 0).toFixed(2)}
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </td>
 
-                {/* Fixed / Notified Value */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'fixedNotifiedValue') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    type="number"
-                    style={{ ...ci, minWidth: '108px', borderColor: hasRowFieldError(index, 'fixedNotifiedValue') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'fixedNotifiedValue') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.fixedNotifiedValue ?? 0}
-                    onChange={(e) => upd(index, 'fixedNotifiedValue', e.target.value)}
-                    min="0"
-                    step="0.01"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'fixedNotifiedValue') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      type="number"
+                      style={{ ...ci, minWidth: '108px', borderColor: hasRowFieldError(index, 'fixedNotifiedValue') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'fixedNotifiedValue') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.fixedNotifiedValue ?? 0}
+                      onChange={(e) => upd(index, 'fixedNotifiedValue', e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </td>
 
-                {/* Extra Tax */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '90px' }} value={item.extraTax ?? 0} onChange={(e) => upd(index, 'extraTax', e.target.value)} min="0" step="0.01" />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" type="number" style={{ ...ci, minWidth: '90px' }} value={item.extraTax ?? 0} onChange={(e) => upd(index, 'extraTax', e.target.value)} min="0" step="0.01" />
+                  </td>
 
-                {/* Further Tax */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '90px' }} value={item.furtherTax ?? 0} onChange={(e) => upd(index, 'furtherTax', e.target.value)} min="0" step="0.01" />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" type="number" style={{ ...ci, minWidth: '90px' }} value={item.furtherTax ?? 0} onChange={(e) => upd(index, 'furtherTax', e.target.value)} min="0" step="0.01" />
+                  </td>
 
-                {/* Total Value of Sales / PFAD */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.totalValueOfSales ?? 0} onChange={(e) => upd(index, 'totalValueOfSales', e.target.value)} min="0" step="0.01" />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.totalValueOfSales ?? 0} onChange={(e) => upd(index, 'totalValueOfSales', e.target.value)} min="0" step="0.01" />
+                  </td>
 
-                {/* ST Withheld at Source */}
-                <td style={tdStyle}>
-                  <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.stWithheldAtSource ?? 0} onChange={(e) => upd(index, 'stWithheldAtSource', e.target.value)} min="0" step="0.01" />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" type="number" style={{ ...ci, minWidth: '108px' }} value={item.stWithheldAtSource ?? 0} onChange={(e) => upd(index, 'stWithheldAtSource', e.target.value)} min="0" step="0.01" />
+                  </td>
 
-                {/* SRO No. / Schedule No. */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sroScheduleNo') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'sroScheduleNo') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sroScheduleNo') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.sroScheduleNo || 'ICTO TABLE II'}
-                    onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)}
-                  >
-                    {SRO_SCHEDULES.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sroScheduleNo') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'sroScheduleNo') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sroScheduleNo') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.sroScheduleNo || 'ICTO TABLE II'}
+                      onChange={(e) => upd(index, 'sroScheduleNo', e.target.value)}
+                    >
+                      {SRO_SCHEDULES.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </td>
 
-                {/* Item S. No. */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sroItemSerialNo') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <select
-                    className="select"
-                    style={{ ...ci, borderColor: hasRowFieldError(index, 'sroItemSerialNo') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sroItemSerialNo') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.sroItemSerialNo || '1(i)'}
-                    onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)}
-                  >
-                    {ITEM_SERIALS.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'sroItemSerialNo') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <select
+                      className="select"
+                      style={{ ...ci, borderColor: hasRowFieldError(index, 'sroItemSerialNo') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'sroItemSerialNo') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.sroItemSerialNo || '1(i)'}
+                      onChange={(e) => upd(index, 'sroItemSerialNo', e.target.value)}
+                    >
+                      {ITEM_SERIALS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </td>
 
-                {/* Invoice Reference No. */}
-                <td style={tdStyle}>
-                  <input className="input" style={{ ...ci, minWidth: '132px' }} value={item.invoiceReferenceNo ?? ''} onChange={(e) => upd(index, 'invoiceReferenceNo', e.target.value)} />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" style={{ ...ci, minWidth: '132px' }} value={item.invoiceReferenceNo ?? ''} onChange={(e) => upd(index, 'invoiceReferenceNo', e.target.value)} />
+                  </td>
 
-                {/* Reasons */}
-                <td style={tdStyle}>
-                  <input className="input" style={ci} value={item.reasons ?? ''} onChange={(e) => upd(index, 'reasons', e.target.value)} />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" style={ci} value={item.reasons ?? ''} onChange={(e) => upd(index, 'reasons', e.target.value)} />
+                  </td>
 
-                {/* Reason Remarks */}
-                <td style={tdStyle}>
-                  <input className="input" style={ci} value={item.reasonRemarks ?? ''} onChange={(e) => upd(index, 'reasonRemarks', e.target.value)} />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" style={ci} value={item.reasonRemarks ?? ''} onChange={(e) => upd(index, 'reasonRemarks', e.target.value)} />
+                  </td>
 
-                {/* Product Description */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'itemDescription') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    style={{ ...ci, minWidth: '174px', borderColor: hasRowFieldError(index, 'itemDescription') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'itemDescription') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.itemDescription ?? ''}
-                    onChange={(e) => upd(index, 'itemDescription', e.target.value)}
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'itemDescription') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, minWidth: '174px', borderColor: hasRowFieldError(index, 'itemDescription') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'itemDescription') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.itemDescription ?? ''}
+                      onChange={(e) => upd(index, 'itemDescription', e.target.value)}
+                    />
+                  </td>
 
-                {/* Petroleum Levy on */}
-                <td style={tdStyle}>
-                  <input className="input" style={ci} value={item.petroleumLevyOn ?? ''} onChange={(e) => upd(index, 'petroleumLevyOn', e.target.value)} placeholder="e.g. Direct Sale" />
-                </td>
+                  <td style={tdStyle}>
+                    <input className="input" style={ci} value={item.petroleumLevyOn ?? ''} onChange={(e) => upd(index, 'petroleumLevyOn', e.target.value)} placeholder="e.g. Direct Sale" />
+                  </td>
 
-                {/* Buyer Address */}
-                <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerAddress') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
-                  <input
-                    className="input"
-                    style={{ ...ci, minWidth: '174px', borderColor: hasRowFieldError(index, 'buyerAddress') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerAddress') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-                    value={item.buyerAddress ?? ''}
-                    onChange={(e) => upd(index, 'buyerAddress', e.target.value)}
-                    placeholder="Buyer address"
-                  />
-                </td>
+                  <td style={{ ...tdStyle, border: hasRowFieldError(index, 'buyerAddress') ? '1px solid rgba(220,53,69,0.7)' : tdStyle.border }}>
+                    <input
+                      className="input"
+                      style={{ ...ci, minWidth: '174px', borderColor: hasRowFieldError(index, 'buyerAddress') ? '#dc3545' : undefined, boxShadow: hasRowFieldError(index, 'buyerAddress') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+                      value={item.buyerAddress ?? ''}
+                      onChange={(e) => upd(index, 'buyerAddress', e.target.value)}
+                      placeholder="Buyer address"
+                    />
+                  </td>
 
-                {/* Remove row */}
-                <td style={{ ...tdStyle, textAlign: 'center' }}>
-                  <button type="button" className="button button-sm button-danger" onClick={() => dispatch({ type: 'REMOVE_ITEM', index })} title="Remove row" style={{ fontSize: '1.1rem', lineHeight: 1, padding: '1px 8px' }}>−</button>
-                </td>
-              </tr>
-            )))
-            }
+                  <td style={{ ...tdStyle, textAlign: 'center' }}>
+                    <button type="button" className="button button-sm button-danger" onClick={() => dispatch({ type: 'REMOVE_ITEM', index })} title="Remove row" style={{ fontSize: '1.1rem', lineHeight: 1, padding: '1px 8px' }}>−</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
