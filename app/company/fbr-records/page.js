@@ -3,6 +3,11 @@ import { useState, useEffect, useMemo } from 'react';
 import FbrSuccessModal from '../../../components/company/FbrSuccessModal';
 import ReceiptViewModal from '../../../components/company/ReceiptViewModal';
 import PasswordConfirmModal from '../../../components/company/PasswordConfirmModal';
+import {
+  getFbrInvoiceStatus,
+  getFbrStatusBadgeClass,
+  formatFbrStatusLabel,
+} from '../../../lib/fbr/fbrStatus';
 
 export default function FbrRecordsPage() {
   const [receipts, setReceipts] = useState([]);
@@ -88,7 +93,7 @@ export default function FbrRecordsPage() {
     if (!q) return receipts;
     return receipts.filter((r) => {
       const reference = r.fbrResponse?.reference || r.fbrResponse?.invoiceNumber || r.errorCode || '';
-      const status = r.success ? 'success' : 'failed';
+      const status = getFbrInvoiceStatus(r) || (r.success ? 'success' : 'failed');
       const received = fmt(r.receivedAt || r.createdAt);
       return [r.submissionId, r.action, status, r.environment, reference, received]
         .join(' ')
@@ -166,39 +171,45 @@ export default function FbrRecordsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
-                  <tr key={r._id}>
-                    <td><code>{r.submissionId || '—'}</code></td>
-                    <td>{r.action}</td>
-                    <td>
-                      <span className={`status-badge ${r.success ? 'submitted' : 'failed'}`}>
-                        {r.success ? 'success' : 'failed'}
-                        {r.mock ? ' (mock)' : ''}
-                      </span>
-                    </td>
-                    <td>{r.environment || '—'}</td>
-                    <td>
-                      {r.fbrResponse?.reference ||
-                        r.fbrResponse?.invoiceNumber ||
-                        r.errorCode ||
-                        '—'}
-                    </td>
-                    <td>{fmt(r.receivedAt || r.createdAt)}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <button className="button button-sm button-secondary" onClick={() => setViewing(r)}>
-                          View
-                        </button>
-                        <button
-                          className="button button-sm button-danger"
-                          onClick={() => { setDeleteError(''); setDeleteTarget(r); }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((r) => {
+                  const fbrStatus = getFbrInvoiceStatus(r);
+                  const statusLabel = formatFbrStatusLabel(fbrStatus || (r.success ? 'success' : 'failed'));
+                  const statusClass = getFbrStatusBadgeClass(fbrStatus || (r.success ? 'success' : 'failed'));
+
+                  return (
+                    <tr key={r._id}>
+                      <td><code>{r.submissionId || '—'}</code></td>
+                      <td>{r.action}</td>
+                      <td>
+                        <span className={`status-badge ${statusClass}`}>
+                          {statusLabel}
+                          {r.mock ? ' (mock)' : ''}
+                        </span>
+                      </td>
+                      <td>{r.environment || '—'}</td>
+                      <td>
+                        {r.fbrResponse?.reference ||
+                          r.fbrResponse?.invoiceNumber ||
+                          r.errorCode ||
+                          '—'}
+                      </td>
+                      <td>{fmt(r.receivedAt || r.createdAt)}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button className="button button-sm button-secondary" onClick={() => setViewing(r)}>
+                            View
+                          </button>
+                          <button
+                            className="button button-sm button-danger"
+                            onClick={() => { setDeleteError(''); setDeleteTarget(r); }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

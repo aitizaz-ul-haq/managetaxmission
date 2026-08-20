@@ -1,6 +1,11 @@
 'use client';
 import { useAuth } from '../../context/AuthContext';
 import styles from './SubmissionViewModal.module.css';
+import {
+  getFbrInvoiceStatus,
+  formatFbrStatusLabel,
+  getFbrStatusBadgeClass,
+} from '../../lib/fbr/fbrStatus';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleString('en-PK') : '—');
 const show = (v) => (v === undefined || v === null || v === '' ? '—' : v);
@@ -122,6 +127,9 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
   const r = receipt;
   const reference =
     r.fbrResponse?.reference || r.fbrResponse?.invoiceNumber || r.requestId || '—';
+  const fbrStatus = getFbrInvoiceStatus(r);
+  const statusLabel = formatFbrStatusLabel(fbrStatus || (r.success ? 'success' : 'failed'));
+  const statusClass = getFbrStatusBadgeClass(fbrStatus || (r.success ? 'success' : 'failed'));
 
   const inv = r.invoicePayload || {};
   const fbrItems =
@@ -150,7 +158,8 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
               <div className="detail-grid">
                 <Field label="Submission ID" value={r.submissionId} />
                 <Field label="Action" value={r.action} />
-                <Field label="Status" value={r.success ? `success${r.mock ? ' (mock)' : ''}` : 'failed'} />
+                <Field label="Status" value={`${statusLabel}${r.mock ? ' (mock)' : ''}`} />
+                <Field label="Status Class" value={statusClass} />
                 <Field label="Environment" value={r.environment} />
                 <Field label="Reference" value={reference} />
                 <Field label="HTTP Status" value={r.httpStatus} />
