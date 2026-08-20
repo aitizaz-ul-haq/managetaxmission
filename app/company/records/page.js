@@ -1,13 +1,16 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SubmissionViewModal from '../../../components/company/SubmissionViewModal';
 import PasswordConfirmModal from '../../../components/company/PasswordConfirmModal';
 
 export default function CompanyRecordsPage() {
+  const router = useRouter();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 12;
 
@@ -27,9 +30,14 @@ export default function CompanyRecordsPage() {
     loadSubmissions().finally(() => setLoading(false));
   }, []);
 
-  // Only successfully submitted forms belong here
-  const submitted = useMemo(
-    () => submissions.filter((s) => s.status === 'submitted'),
+  const visibleSubmissions = useMemo(
+    () => submissions
+      .filter((s) => ['draft', 'validated', 'ready_for_submission', 'submitted', 'failed'].includes(s.status))
+      .sort((a, b) => {
+        const aTime = new Date(a.submittedAt || a.updatedAt || 0).getTime();
+        const bTime = new Date(b.submittedAt || b.updatedAt || 0).getTime();
+        return bTime - aTime;
+      }),
     [submissions]
   );
 
@@ -64,15 +72,11 @@ export default function CompanyRecordsPage() {
   }, [search]);
 
   const filtered = useMemo(() => {
-    const sorted = [...submitted].sort((a, b) => {
-      const aTime = new Date(a.submittedAt || a.updatedAt || 0).getTime();
-      const bTime = new Date(b.submittedAt || b.updatedAt || 0).getTime();
-      return bTime - aTime;
-    });
-
     const q = search.trim().toLowerCase();
-    if (!q) return sorted;
-    return sorted.filter((s) => {
+    return visibleSubmissions.filter((s) => {
+      const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+      if (!matchesStatus) return false;
+
       const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '';
       const buyerId = s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '';
       const submittedOn = fmtDate(s.submittedAt || s.updatedAt);
@@ -81,12 +85,14 @@ export default function CompanyRecordsPage() {
       const saleValue = fmtMoney(s.totalSaleValue);
       const taxAmount = fmtMoney(s.totalTaxAmount);
       const total = fmtMoney(s.totalBillAmount);
-      return [buyer, buyerId, submittedOn, period, items, saleValue, taxAmount, total]
+      const haystack = [buyer, buyerId, submittedOn, period, items, saleValue, taxAmount, total, s.status]
         .join(' ')
-        .toLowerCase()
-        .includes(q);
+        .toLowerCase();
+
+      if (!q) return true;
+      return haystack.includes(q);
     });
-  }, [submitted, search]);
+  }, [visibleSubmissions, search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -109,16 +115,33 @@ export default function CompanyRecordsPage() {
         </Link>
       </div>
 
-      <div style={{ marginBottom: '1rem', maxWidth: '360px' }}>
-        <input
-          className="input"
-          type="search"
-          name="submission-filter"
-          autoComplete="off"
-          placeholder="Filter by buyer, date, period, or amount…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: '360px', flex: 1, minWidth: '220px' }}>
+          <input
+            className="input"
+            type="search"
+            name="submission-filter"
+            autoComplete="off"
+            placeholder="Filter by buyer, date, period, or amount…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div style={{ minWidth: '180px' }}>
+          <select
+            className="select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="validated">Validated</option>
+            <option value="ready_for_submission">Ready for Submission</option>
+            <option value="submitted">Submitted</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -127,11 +150,11 @@ export default function CompanyRecordsPage() {
         <div className="table-wrapper">
           {filtered.length === 0 ? (
             <div className="table-empty">
-              <h3>{submitted.length === 0 ? 'No submissions yet' : 'No matches found'}</h3>
+              <h3>{visibleSubmissions.length === 0 ? 'No submissions yet' : 'No matches found'}</h3>
               <p>
-                {submitted.length === 0
-                  ? 'Submissions appear here once they are successfully submitted to FBR.'
-                  : 'Try a different search term.'}
+                {visibleSubmissions.length === 0
+                  ? 'Save a draft or submit a record to see it here.'
+                  : 'Try a different search term or status filter.'}
               </p>
             </div>
           ) : (
@@ -139,7 +162,8 @@ export default function CompanyRecordsPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Updated</th>
                     <th>Period</th>
                     <th>Buyer</th>
                     <th>Buyer NTN/CNIC</th>
@@ -155,8 +179,10 @@ export default function CompanyRecordsPage() {
                     const buyer = s.itemList?.[0]?.buyerBusinessName || s.buyerBusinessName || '—';
                     const buyerId =
                       s.itemList?.[0]?.buyerNTN || s.itemList?.[0]?.buyerCNIC || s.buyerNTN || s.buyerCNIC || '—';
+                    const isDraft = s.status === 'draft';
                     return (
                       <tr key={s._id}>
+                        <td><span className={`status-badge ${s.status}`}>{s.status}</span></td>
                         <td>{fmtDate(s.submittedAt || s.updatedAt)}</td>
                         <td>{s.taxPeriodMonth}/{s.taxPeriodYear}</td>
                         <td>{buyer}</td>
@@ -167,8 +193,17 @@ export default function CompanyRecordsPage() {
                         <td>PKR {fmtMoney(s.totalBillAmount)}</td>
                         <td>
                           <div style={{ display: 'flex', gap: '0.4rem' }}>
-                            <button className="button button-sm button-secondary" onClick={() => setViewing(s)}>
-                              View
+                            <button
+                              className="button button-sm button-secondary"
+                              onClick={() => {
+                                if (isDraft) {
+                                  router.push(`/company/submissions/${s._id}`);
+                                } else {
+                                  setViewing(s);
+                                }
+                              }}
+                            >
+                              {isDraft ? 'Continue' : 'View'}
                             </button>
                             <button
                               className="button button-sm button-danger"
