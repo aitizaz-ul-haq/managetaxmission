@@ -5,6 +5,7 @@ import TotalsCard from './TotalsCard';
 import ValidationErrors from './ValidationErrors';
 import FbrSuccessModal from './FbrSuccessModal';
 import { validateSubmission } from '../../lib/validators/submissionValidator';
+import { getScenarioProfile } from '../../lib/fbr/scenarioProfiles';
 
 /**
  * FBR FIELD GAPS — form inputs still missing (bridge requires/uses them).
@@ -178,6 +179,26 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     dispatch({ type: 'SET_FIELD', field, value });
   };
 
+  const applyScenarioDefaults = (nextScenario) => {
+    const scenario = nextScenario || '';
+    const profile = getScenarioProfile(scenario);
+    if (!profile) {
+      set('scenarioId', scenario);
+      return;
+    }
+
+    set('scenarioId', profile.scenarioId);
+    set('submissionType', profile.submissionType);
+
+    state.itemList.forEach((_, index) => {
+      dispatch({ type: 'UPDATE_ITEM', index, field: 'saleType', value: profile.saleType });
+      dispatch({ type: 'UPDATE_ITEM', index, field: 'hsCode', value: profile.defaultHsCode || '' });
+      dispatch({ type: 'UPDATE_ITEM', index, field: 'taxRate', value: profile.defaultTaxRate ?? '' });
+      dispatch({ type: 'UPDATE_ITEM', index, field: 'sroScheduleNo', value: profile.defaultSroScheduleNo || '' });
+      dispatch({ type: 'UPDATE_ITEM', index, field: 'sroItemSerialNo', value: profile.defaultSroItemSerialNo || '' });
+    });
+  };
+
   const upd = (index, field, value) => {
     clearValidationFeedback();
     dispatch({ type: 'UPDATE_ITEM', index, field, value });
@@ -226,7 +247,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
         buyerProvince: sellerProvince,
         buyerAddress: 'Office 5, Blue Area, Islamabad',
         buyerType: 'Unregistered',
-        scenarioId: 'SN019',
+        scenarioId: state.scenarioId || '',
         validationErrors: [],
         itemList: [
           {
@@ -532,13 +553,15 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
           </div>
           <div className="form-group" style={{ margin: 0 }}>
             <label style={{ fontSize: '0.8rem' }}>FBR Scenario ID <span className="required">*</span></label>
-            <input
-              className="input"
-              value={state.scenarioId || ''}
-              onChange={(e) => set('scenarioId', e.target.value.trim())}
-              style={{ width: '120px', borderColor: hasFieldError('scenarioId') ? '#dc3545' : undefined, boxShadow: hasFieldError('scenarioId') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
-              placeholder="e.g. SN019"
-            />
+            <select
+              className="select"
+              value={state.scenarioId || 'SN019'}
+              onChange={(e) => applyScenarioDefaults(e.target.value)}
+              style={{ width: '140px', borderColor: hasFieldError('scenarioId') ? '#dc3545' : undefined, boxShadow: hasFieldError('scenarioId') ? '0 0 0 3px rgba(220,53,69,0.12)' : undefined }}
+            >
+              <option value="SN018">SN018</option>
+              <option value="SN019">SN019</option>
+            </select>
           </div>
         </div>
 
