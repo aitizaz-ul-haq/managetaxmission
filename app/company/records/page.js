@@ -85,7 +85,7 @@ export default function CompanyRecordsPage() {
       const saleValue = fmtMoney(s.totalSaleValue);
       const taxAmount = fmtMoney(s.totalTaxAmount);
       const total = fmtMoney(s.totalBillAmount);
-      const haystack = [buyer, buyerId, submittedOn, period, items, saleValue, taxAmount, total, s.status]
+      const haystack = [buyer, buyerId, submittedOn, period, items, saleValue, taxAmount, total, s.status, s.scenarioId, s.fbrEnvironment]
         .join(' ')
         .toLowerCase();
 
@@ -165,6 +165,8 @@ export default function CompanyRecordsPage() {
                     <th>Status</th>
                     <th>Updated</th>
                     <th>Period</th>
+                    <th>Scenario</th>
+                    <th>Environment</th>
                     <th>Buyer</th>
                     <th>Buyer NTN/CNIC</th>
                     <th>Items</th>
@@ -185,6 +187,20 @@ export default function CompanyRecordsPage() {
                         <td><span className={`status-badge ${s.status}`}>{s.status}</span></td>
                         <td>{fmtDate(s.submittedAt || s.updatedAt)}</td>
                         <td>{s.taxPeriodMonth}/{s.taxPeriodYear}</td>
+                        <td><span className="status-badge neutral">{s.scenarioId || '—'}</span></td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.18rem 0.55rem',
+                            borderRadius: '999px',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            background: (s.fbrEnvironment || 'sandbox') === 'production' ? '#dff5e5' : '#fff4c7',
+                            color: (s.fbrEnvironment || 'sandbox') === 'production' ? '#1f6d3b' : '#7a5b00',
+                          }}>
+                            {(s.fbrEnvironment || 'sandbox').charAt(0).toUpperCase() + (s.fbrEnvironment || 'sandbox').slice(1)}
+                          </span>
+                        </td>
                         <td>{buyer}</td>
                         <td>{buyerId}</td>
                         <td>{s.itemList?.length || 0}</td>

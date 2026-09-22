@@ -94,6 +94,7 @@ export const initialFormState = {
   buyerAddress: '',
   buyerType: '',
   scenarioId: 'SN019',
+  fbrEnvironment: 'sandbox',
   totalSaleValue: 0,
   totalTaxAmount: 0,
   totalBillAmount: 0,

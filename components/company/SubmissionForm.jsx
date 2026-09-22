@@ -179,6 +179,17 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
     dispatch({ type: 'SET_FIELD', field, value });
   };
 
+  const envBadgeStyle = (env) => ({
+    display: 'inline-block',
+    padding: '0.18rem 0.55rem',
+    borderRadius: '999px',
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    background: env === 'production' ? '#dff5e5' : '#fff4c7',
+    color: env === 'production' ? '#1f6d3b' : '#7a5b00',
+  });
+
   const applyScenarioDefaults = (nextScenario) => {
     const scenario = nextScenario || '';
     const profile = getScenarioProfile(scenario);
@@ -561,6 +572,18 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
             >
               <option value="SN018">SN018</option>
               <option value="SN019">SN019</option>
+            </select>
+          </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.8rem' }}>FBR Environment</label>
+            <select
+              className="select"
+              value={state.fbrEnvironment || 'sandbox'}
+              onChange={(e) => set('fbrEnvironment', e.target.value)}
+              style={{ width: '130px' }}
+            >
+              <option value="sandbox">Sandbox</option>
+              <option value="production">Production</option>
             </select>
           </div>
         </div>

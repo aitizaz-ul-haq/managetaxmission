@@ -50,12 +50,18 @@ export async function POST(request) {
   }
 
   const submissionId = body.submissionId || String(submissionDoc?._id || randomUUID());
+  const selectedEnvironment = (submissionDoc?.fbrEnvironment || body.fbrEnvironment || 'sandbox').toLowerCase();
 
   // Attach this company's own FBR token so FBR accepts the seller/token pairing.
   const company = await Company.findById(user.companyId).select('fbrSandboxToken').lean();
   const fbrToken = company?.fbrSandboxToken || undefined;
 
-  const { ok, status, envelope } = await submitInvoice({ submissionId, invoice, fbrToken });
+  const { ok, status, envelope } = await submitInvoice({
+    submissionId,
+    invoice,
+    fbrToken,
+    environment: selectedEnvironment,
+  });
 
   const receipt = await FbrReceipt.create({
     companyId: user.companyId,
@@ -66,7 +72,7 @@ export async function POST(request) {
     invoicePayload: invoice,
     success: Boolean(envelope?.success),
     mock: Boolean(envelope?.mock),
-    environment: envelope?.environment || '',
+    environment: selectedEnvironment,
     requestId: envelope?.requestId || '',
     httpStatus: envelope?.httpStatus ?? status ?? null,
     fbrResponse: envelope?.fbrResponse ?? null,
@@ -80,6 +86,7 @@ export async function POST(request) {
     submissionDoc.status = envelope?.success ? 'submitted' : 'failed';
     submissionDoc.fbrResponse = envelope || null;
     submissionDoc.fbrPayload = invoice;
+    submissionDoc.fbrEnvironment = selectedEnvironment;
     if (envelope?.success) submissionDoc.submittedAt = new Date();
     await submissionDoc.save();
   }

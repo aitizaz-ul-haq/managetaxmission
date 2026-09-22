@@ -107,7 +107,8 @@ export default function FbrRecordsPage() {
       const reference = r.fbrResponse?.reference || r.fbrResponse?.invoiceNumber || r.errorCode || '';
       const status = getFbrInvoiceStatus(r) || (r.success ? 'success' : 'failed');
       const received = fmt(r.receivedAt || r.createdAt);
-      return [r.submissionId, r.action, status, r.environment, reference, received]
+      const scenario = r.invoicePayload?.scenarioId || r.fbrResponse?.scenarioId || r.fbrResponse?.invoice?.scenarioId || '—';
+      return [r.submissionId, r.action, status, r.environment, reference, received, scenario, r.environment]
         .join(' ')
         .toLowerCase()
         .includes(q);
@@ -186,6 +187,7 @@ export default function FbrRecordsPage() {
                     <th>Submission ID</th>
                     <th>Action</th>
                     <th>Status</th>
+                    <th>Scenario</th>
                     <th>Environment</th>
                     <th>Reference</th>
                     <th>Received</th>
@@ -208,7 +210,20 @@ export default function FbrRecordsPage() {
                             {r.mock ? ' (mock)' : ''}
                           </span>
                         </td>
-                        <td>{r.environment || '—'}</td>
+                        <td><span className="status-badge neutral">{r.invoicePayload?.scenarioId || r.fbrResponse?.scenarioId || '—'}</span></td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.18rem 0.55rem',
+                            borderRadius: '999px',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            background: (r.environment || 'sandbox') === 'production' ? '#dff5e5' : '#fff4c7',
+                            color: (r.environment || 'sandbox') === 'production' ? '#1f6d3b' : '#7a5b00',
+                          }}>
+                            {(r.environment || 'sandbox').charAt(0).toUpperCase() + (r.environment || 'sandbox').slice(1)}
+                          </span>
+                        </td>
                         <td>
                           {r.fbrResponse?.reference ||
                             r.fbrResponse?.invoiceNumber ||

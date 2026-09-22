@@ -59,6 +59,7 @@ const SubmissionSchema = new mongoose.Schema(
     buyerAddress: { type: String, default: '' },
     buyerType: { type: String, default: '' },
     scenarioId: { type: String, default: '' },
+    fbrEnvironment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
     totalSaleValue: { type: Number, default: 0 },
     totalTaxAmount: { type: Number, default: 0 },
     totalBillAmount: { type: Number, default: 0 },
