@@ -15,7 +15,7 @@ const emptyForm = {
   incomeTaxStatus: '', salesTaxStatus: '',
   companyName: '', legalName: '', ntn: '', strn: '', province: '',
   email: '', cell: '', address: '',
-  fbrSandboxToken: '',
+  fbrSandboxToken: '', fbrProductionToken: '',
   branches: [{ ...emptyBranch }],
   accountant: { ...emptyAccountant },
   supervisor: { ...emptySupervisor },
@@ -185,6 +185,10 @@ export default function CompanyForm({ initialData, onSave, onCancel }) {
           <div className="form-group" style={{ gridColumn: 'span 2' }}>
             <label>FBR Sandbox Token</label>
             <input className="input" value={form.fbrSandboxToken} onChange={(e) => set('fbrSandboxToken', e.target.value.trim())} placeholder="Token issued by FBR for this company's NTN" autoComplete="off" />
+          </div>
+          <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <label>FBR Production Token</label>
+            <input className="input" value={form.fbrProductionToken} onChange={(e) => set('fbrProductionToken', e.target.value.trim())} placeholder="Live FBR token issued for this company's NTN" autoComplete="off" />
           </div>
         </div>
       </div>

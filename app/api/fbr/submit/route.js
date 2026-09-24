@@ -53,8 +53,15 @@ export async function POST(request) {
   const selectedEnvironment = (submissionDoc?.fbrEnvironment || body.fbrEnvironment || 'sandbox').toLowerCase();
 
   // Attach this company's own FBR token so FBR accepts the seller/token pairing.
-  const company = await Company.findById(user.companyId).select('fbrSandboxToken').lean();
-  const fbrToken = company?.fbrSandboxToken || undefined;
+  // Token must match the target environment — never send a sandbox token on a
+  // production request (or vice versa), so an unset production token simply
+  // omits the header and lets the bridge fall back to its own default.
+  const company = await Company.findById(user.companyId)
+    .select('fbrSandboxToken fbrProductionToken')
+    .lean();
+  const fbrToken =
+    (selectedEnvironment === 'production' ? company?.fbrProductionToken : company?.fbrSandboxToken) ||
+    undefined;
 
   const { ok, status, envelope } = await submitInvoice({
     submissionId,
