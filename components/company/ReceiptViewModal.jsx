@@ -35,6 +35,10 @@ function InvoiceDetails({ inv, reference, fbrItems }) {
   (fbrItems || []).forEach((s) => {
     statusByRow[String(s.itemSNo)] = s;
   });
+  // Total Bill = sale value + tax; NOT item.totalValues (that's the separate
+  // PFAD-only "Total Value of Sales" field, usually 0 for non-PFAD invoices)
+  const totalSaleValue = items.reduce((sum, it) => sum + (Number(it.valueSalesExcludingST) || 0), 0);
+  const totalTax = items.reduce((sum, it) => sum + (Number(it.salesTaxApplicable) || 0), 0);
 
   return (
     <>
@@ -145,9 +149,9 @@ function InvoiceDetails({ inv, reference, fbrItems }) {
         <div className="detail-section">
           <div className="detail-section-title">Totals</div>
           <div className="detail-grid">
-            <Field label="Total Sale Value" value={`PKR ${money(items.reduce((sum, it) => sum + (Number(it.valueSalesExcludingST) || 0), 0))}`} />
-            <Field label="Total Tax" value={`PKR ${money(items.reduce((sum, it) => sum + (Number(it.salesTaxApplicable) || 0), 0))}`} />
-            <Field label="Total Bill" value={`PKR ${money(items.reduce((sum, it) => sum + (Number(it.totalValues) || 0), 0))}`} />
+            <Field label="Total Sale Value" value={`PKR ${money(totalSaleValue)}`} />
+            <Field label="Total Tax" value={`PKR ${money(totalTax)}`} />
+            <Field label="Total Bill" value={`PKR ${money(totalSaleValue + totalTax)}`} />
           </div>
         </div>
       )}
