@@ -114,6 +114,41 @@ function InvoiceDetails({ inv, reference, fbrItems }) {
               </tbody>
             </table>
           </div>
+          <div className={`table-wrapper ${styles.itemsTableSpacer}`}>
+            <table className={styles.itemsTable}>
+              <thead>
+                <tr>
+                  <th>Extra Tax</th>
+                  <th>Further Tax</th>
+                  <th>ST Withheld at Source</th>
+                  <th>SRO No. / Schedule No.</th>
+                  <th>Item S. No.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => (
+                  <tr key={i}>
+                    <td>{money(it.extraTax)}</td>
+                    <td>{money(it.furtherTax)}</td>
+                    <td>{money(it.salesTaxWithheldAtSource)}</td>
+                    <td>{show(it.sroScheduleNo)}</td>
+                    <td>{show(it.sroItemSerialNo)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div className="detail-section">
+          <div className="detail-section-title">Totals</div>
+          <div className="detail-grid">
+            <Field label="Total Sale Value" value={`PKR ${money(items.reduce((sum, it) => sum + (Number(it.valueSalesExcludingST) || 0), 0))}`} />
+            <Field label="Total Tax" value={`PKR ${money(items.reduce((sum, it) => sum + (Number(it.salesTaxApplicable) || 0), 0))}`} />
+            <Field label="Total Bill" value={`PKR ${money(items.reduce((sum, it) => sum + (Number(it.totalValues) || 0), 0))}`} />
+          </div>
         </div>
       )}
     </>
@@ -138,7 +173,7 @@ export default function ReceiptViewModal({ open, onClose, receipt }) {
     [];
 
   return (
-    <div className="modal-backdrop" style={{ alignItems: 'center' }} onClick={onClose}>
+    <div className={`modal-backdrop ${styles.backdrop}`} onClick={onClose}>
       <div className={`modal ${styles.modal} print-area`} onClick={(e) => e.stopPropagation()}>
         <div className={`modal-header no-print ${styles.header}`}>
           <h2>FBR Invoice</h2>

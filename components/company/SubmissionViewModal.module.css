@@ -109,6 +109,10 @@
   font-size: var(--font-sm);
 }
 
+.itemsTableSpacer {
+  margin-top: 0.75rem;
+}
+
 .itemsTable th,
 .itemsTable td {
   border: 1px solid var(--color-border);
@@ -144,6 +148,32 @@
 
 /* Compact the document so everything fits on one A4 page when printing */
 @media print {
+  /* The backdrop is position:fixed on screen (styles/modal.css .modal-backdrop),
+     and browsers redraw position:fixed elements on EVERY printed page — that's
+     the "page 1 repeated on page 2" bug. Escape to a plain, unfixed flow so it
+     only prints once, and free the height/width normally clamped for screen. */
+  .backdrop {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .modal {
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
   /* Reveal the FBR-invoice print wrapper and its (non print-only) children */
   .printBody {
     display: block !important;

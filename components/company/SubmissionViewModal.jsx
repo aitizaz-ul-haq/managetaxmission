@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import styles from './SubmissionViewModal.module.css';
@@ -19,6 +20,47 @@ function Field({ label, value, span }) {
 export default function SubmissionViewModal({ open, onClose, submission }) {
   const router = useRouter();
   const { user } = useAuth();
+  const modalRef = useRef(null);
+
+  // visibility:hidden (styles/print.css) hides the rest of the page but keeps its
+  // layout height, which can still push out a blank extra printed page. Actually
+  // remove that content from layout for the duration of print by display:none-ing
+  // every sibling along the print area's ancestor chain, then restore afterward.
+  useEffect(() => {
+    const modalEl = modalRef.current;
+    if (!modalEl) return undefined;
+    let hidden = [];
+
+    const hideOutsidePrintArea = () => {
+      let node = modalEl;
+      while (node && node !== document.body) {
+        const parent = node.parentElement;
+        if (parent) {
+          Array.from(parent.children).forEach((sibling) => {
+            if (sibling !== node && sibling.style.display !== 'none') {
+              hidden.push({ el: sibling, prevDisplay: sibling.style.display });
+              sibling.style.display = 'none';
+            }
+          });
+        }
+        node = parent;
+      }
+    };
+    const restore = () => {
+      hidden.forEach(({ el, prevDisplay }) => {
+        el.style.display = prevDisplay;
+      });
+      hidden = [];
+    };
+
+    window.addEventListener('beforeprint', hideOutsidePrintArea);
+    window.addEventListener('afterprint', restore);
+    return () => {
+      window.removeEventListener('beforeprint', hideOutsidePrintArea);
+      window.removeEventListener('afterprint', restore);
+    };
+  }, [open, submission]);
+
   if (!open || !submission) return null;
 
   const s = submission;
@@ -31,7 +73,7 @@ export default function SubmissionViewModal({ open, onClose, submission }) {
 
   return (
     <div className={`modal-backdrop ${styles.backdrop}`} onClick={onClose}>
-      <div className={`modal ${styles.modal} print-area`} onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className={`modal ${styles.modal} print-area`} onClick={(e) => e.stopPropagation()}>
         <div className={`modal-header no-print ${styles.header}`}>
           <h2>Submission</h2>
           <div className={styles.headerActions}>
@@ -125,6 +167,30 @@ export default function SubmissionViewModal({ open, onClose, submission }) {
                       <td>{fmtMoney(it.saleValue)}</td>
                       <td>{show(it.taxRate)}%</td>
                       <td>{fmtMoney(it.taxAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className={`table-wrapper ${styles.itemsTableSpacer}`}>
+              <table className={styles.itemsTable}>
+                <thead>
+                  <tr>
+                    <th>Extra Tax</th>
+                    <th>Further Tax</th>
+                    <th>ST Withheld at Source</th>
+                    <th>SRO No. / Schedule No.</th>
+                    <th>Item S. No.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(s.itemList || []).map((it, i) => (
+                    <tr key={i}>
+                      <td>{fmtMoney(it.extraTax)}</td>
+                      <td>{fmtMoney(it.furtherTax)}</td>
+                      <td>{fmtMoney(it.stWithheldAtSource)}</td>
+                      <td>{show(it.sroScheduleNo)}</td>
+                      <td>{show(it.sroItemSerialNo)}</td>
                     </tr>
                   ))}
                 </tbody>

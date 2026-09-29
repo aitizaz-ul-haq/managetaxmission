@@ -13,7 +13,12 @@
   html,
   body {
     width: 210mm;
-    height: auto;
+    /* Hidden (visibility:hidden) page content below/around the print area still
+       occupies normal-flow height, so the doc can grow past one page and print
+       a genuinely blank extra page — cap it to one page and clip that overflow. */
+    height: 281mm;
+    max-height: 281mm;
+    overflow: hidden;
   }
 
   /* Hide everything, then reveal only the print area */
