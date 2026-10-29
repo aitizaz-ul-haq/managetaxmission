@@ -1,0 +1,269 @@
+.page { min-width: 0; color: #eef0ff; }
+.header { gap: 1rem; flex-wrap: wrap; }
+.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.scope { font-size: 12px; color: #adb8df; margin: -0.5rem 0 1.25rem; }
+.state { padding: 3rem 1rem; color: #b8c2e5; text-align: center; background: linear-gradient(125deg, #131c3d, #111831); border: 1px solid #28315b; border-radius: 10px; }
+.error { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.error p { overflow-wrap: anywhere; }
+.dashboard { display: flex; flex-direction: column; gap: 10px; padding: 14px 20px; }
+.hero { display: flex; justify-content: space-between; align-items: center; gap: 20px; min-height: 142px; padding: 18px 24px; border: 1px solid rgba(103, 121, 211, .2); border-radius: 10px; background: #111735 url('/images/taxmission_dashboard_title_background.png') center / cover no-repeat; overflow: hidden; }
+.heroCopy { min-width: 0; position: relative; z-index: 1; }
+.hero .eyebrow { margin-bottom: 4px; color: #bfc4ff; }
+.hero h1 { margin: 0; color: #f7f5ff; font-size: clamp(27px, 2.45vw, 40px); font-weight: 750; line-height: 1.2; letter-spacing: -.6px; }
+.hero h1 span { color: #ff5d8b; }
+.heroCopy > p:not(.eyebrow) { margin: 8px 0 0; color: #c5ceed; font-size: 13px; line-height: 1.4; }
+.heroTagline { flex: 0 0 176px; margin: 0; padding-left: 28px; border-left: 1px solid rgba(156, 145, 248, .2); color: #bec4ff; font-size: 16px; line-height: 1.3; }
+.heroTagline span { display: block; width: 42px; height: 2px; margin-top: 11px; background: #ff537e; }
+.heroActions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.heroActions button { padding: 3px 9px; min-height: 23px; border: 1px solid #6565a84d; border-radius: 5px; background: #161c3fbb; color: #c6cff4; font: inherit; font-size: 10px; cursor: pointer; }
+.heroActions button:last-child { color: #ff83a2; border-color: #ff5b814f; background: #a22e631b; }
+.heroActions button:hover { background: #30315c; color: white; }
+.heroActions button:disabled { opacity: .5; cursor: wait; }
+.dashboardBody { display: grid; gap: 10px; min-width: 0; }
+.overview { display: grid; grid-template-columns: 1.17fr 1fr; gap: 12px; min-width: 0; }
+.progressCard, .attention a, .financialCard, .panel { border: 1px solid #283263; border-radius: 10px; background: linear-gradient(115deg, #15204c 0%, #111832 100%); box-shadow: inset 0 1px 0 #a2b5ff05; }
+.progressCard { display: flex; align-items: flex-start; gap: 22px; padding: 14px 16px; background: linear-gradient(115deg, #132755 0%, #142047 100%); border-color: #22438a; }
+.progressCopy { flex: 1; min-width: 0; }
+.eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .9px; text-transform: uppercase; margin-bottom: 4px; color: #d5d8ff; }
+.progressHeading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.progressHeading strong { font-size: clamp(22px, 1.8vw, 29px); font-weight: 700; line-height: 1.2; }
+.progressHeading span { flex-shrink: 0; font-size: 12px; color: #c9d0f5; }
+.progress { width: 100%; height: 9px; display: block; border: none; border-radius: 6px; overflow: hidden; background: #4b5184; appearance: none; }
+.progress::-webkit-progress-bar { background: #4b5184; border-radius: 6px; }
+.progress::-webkit-progress-value { background: linear-gradient(90deg, #85e4ce, #9bed93); border-radius: 6px; }
+.progress::-moz-progress-bar { background: #8ce8af; border-radius: 6px; }
+.progressNote { margin: 8px 0 0; color: #c2cbed; font-size: 10px; line-height: 1.4; }
+.attention { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
+.attention a { position: relative; display: flex; gap: 18px; align-items: flex-start; min-width: 0; padding: 14px; text-decoration: none; color: #f6f4ff; transition: border-color .15s, filter .15s; }
+.attention a:hover { border-color: #5d6dba; filter: brightness(1.12); }
+.attention .readyCard { background: linear-gradient(115deg, #08313e, #112338); border-color: #0c4858; }
+.attention .failedCard { background: linear-gradient(115deg, #362039, #211c36); border-color: #4d2a50; }
+.attention a > div { min-width: 0; align-self: center; padding-top: 8px; }
+.attention strong { font-size: 27px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.attention a > div > span { display: block; margin-top: 4px; color: #c9d1f2; font-size: 12px; }
+.attentionChevron { position: absolute; right: 16px; bottom: 19px; }
+.metricIcon { --accent: #8955ff; --icon-rgb: 104, 55, 230; flex: 0 0 54px; display: flex; justify-content: center; align-items: center; width: 54px; height: 54px; border: 1px solid rgba(var(--icon-rgb), .5); border-radius: 9px; color: var(--accent); background: linear-gradient(135deg, rgba(var(--icon-rgb), .38), rgba(var(--icon-rgb), .15)); box-shadow: inset 0 0 17px rgba(var(--icon-rgb), .17); }
+.blue { --accent: #3d82ff; --icon-rgb: 37, 91, 238; }
+.teal { --accent: #24edb3; --icon-rgb: 0, 164, 145; }
+.coral { --accent: #ff6d9c; --icon-rgb: 211, 59, 112; }
+.purple { --accent: #9e4cff; --icon-rgb: 112, 51, 238; }
+.amber { --accent: #ffb144; --icon-rgb: 202, 126, 50; }
+.metricIcon.blue { --accent: #67a3ff; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.financialCard { position: relative; display: flex; gap: 22px; align-items: flex-start; min-width: 0; overflow: hidden; padding: 11px 16px; background: linear-gradient(115deg, rgba(var(--icon-rgb), .12), #131c3dd9); }
+.financialCard .metricIcon { --accent: inherit; --icon-rgb: inherit; }
+.financialCopy { position: relative; z-index: 1; min-width: 0; flex: 1; }
+.financialCopy h2 { margin: 2px 0 6px; color: #d0d7f6; font-size: 12px; font-weight: 400; line-height: 1.3; }
+.financialCopy > strong { display: block; color: #f7f7ff; font-size: clamp(20px, 1.55vw, 25px); font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; letter-spacing: -.3px; }
+.change { display: inline-flex; align-items: center; gap: 3px; color: #14efb0; font-size: 12px; font-weight: 600; margin-top: 6px; }
+.change.decrease { color: #ff7895; }
+.change small { font-size: 8px; font-weight: 400; color: #a7b2d7; margin-left: 3px; }
+.miniTrend { position: absolute; right: 16px; bottom: 11px; width: 29%; max-width: 143px; height: 49px; color: var(--accent); opacity: .9; }
+.charts { display: grid; grid-template-columns: 1fr 1.04fr; gap: 12px; min-width: 0; }
+.panel { min-width: 0; padding: 11px 17px; background: linear-gradient(125deg, #131c3ce8, #0e1833e8); }
+.cardHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; min-width: 0; }
+.cardHeader h2 { color: #f5f3ff; font-size: 15px; font-weight: 650; line-height: 1.3; margin: 0; }
+.cardHeader p, .hint { font-size: 12px; line-height: 1.4; color: #b3c0eb; margin: 1px 0 0; }
+.scopeBadge { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 5px 11px; border: 1px solid #303d69; border-radius: 5px; color: #e2e6ff; background: linear-gradient(110deg, #202c55, #182348); font-size: 11px; white-space: nowrap; }
+.statusRows { display: grid; align-content: center; gap: 15px; margin-top: 22px; }
+.statusRow { display: grid; grid-template-columns: minmax(140px, .6fr) minmax(0, 1.2fr) 20px; align-items: center; gap: 13px; font-size: 12px; color: #dae1fa; }
+.statusRow strong { text-align: right; color: #f3f4ff; font-size: 12px; }
+.track { background: #232f53; height: 10px; border-radius: 8px; overflow: hidden; }
+.fill { height: 100%; border-radius: inherit; }
+.draft { background: linear-gradient(90deg, #8a87d7, #aaa5ec); }
+.validated { background: linear-gradient(90deg, #8c67d5, #b194fb); }
+.ready_for_submission { background: linear-gradient(90deg, #13a9cb, #66d9e8); }
+.submitted { background: linear-gradient(90deg, #57e696, #8cf2ae); }
+.failed { background: linear-gradient(90deg, #ff416f, #ff6689); }
+.volumeChart { display: block; width: 100%; height: 165px; margin-top: 10px; overflow: visible; }
+.chartGridLine { stroke: #8396d3; stroke-opacity: .13; stroke-width: 1; }
+.chartLabel { fill: #c8d0f3; font-size: 10px; }
+.chartCount { fill: #f6f2ff; font-size: 10px; font-weight: 600; }
+.recentPanel { padding: 10px 12px 7px; }
+.recentPanel .cardHeader { padding: 0 6px 7px; }
+.viewAll { display: inline-flex; align-items: center; gap: 7px; min-height: 31px; padding: 6px 12px; color: #ff658e; background: #b92d5920; border: 1px solid #a637665c; border-radius: 6px; font-size: 11px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.viewAll:hover { background: #b92d593b; color: #ff9ab7; }
+.tableScroll { overflow-x: auto; max-width: 100%; scrollbar-width: thin; scrollbar-color: #4a5382 transparent; }
+.recentScroll { max-height: 220px; overflow: auto; overscroll-behavior: contain; border-radius: 5px; }
+.page .recentScroll table { margin: 0; width: 100%; border-collapse: collapse; font-size: 10px; }
+.page .recentScroll th { position: sticky; top: 0; z-index: 1; color: #d7ddff; background: #182244; padding: 5px 12px; text-align: left; font-weight: 500; line-height: 1.2; }
+.page .recentScroll td { color: #dfe4f9; padding: 3px 12px; border-bottom: 1px solid #8a9cd214; line-height: 1.3; }
+.page .recentScroll tbody tr:nth-child(even) { background: #ffffff02; }
+.page .recentScroll tbody tr:hover { background: var(--color-table-hover, #263354); }
+.page .recentScroll :global(.status-badge) { padding: 2px 10px; font-size: 10px; font-weight: 400; line-height: 1.2; }
+.buyerCell { width: 21%; }
+.buyerCell span { display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowAction { display: inline-flex; align-items: center; justify-content: center; width: 29px; height: 21px; color: #d9dfff; text-decoration: none; letter-spacing: 1px; }
+.rowAction:hover { color: #ff719b; }
+.dashboardScope { margin: 5px 6px 0; font-size: 8px; line-height: 1.3; color: #9daacf; }
+.numeric { text-align: right !important; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.filters { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(145px, 1fr) minmax(145px, 1fr) auto; align-items: end; gap: 12px; margin-bottom: 18px; padding: 16px 18px; border: 1px solid #3a3a6e; border-radius: 9px; background: radial-gradient(ellipse at 100% 0, #85325c2b, transparent 65%), linear-gradient(110deg, #202746, #201e3c); box-shadow: inset 0 1px 0 #fff03; }
+.filters label { display: flex; flex-direction: column; min-width: 0; gap: 6px; color: #d2d8f3; font-size: 11px; font-weight: 500; }
+.filters :global(.input), .filters :global(.select) { height: 38px; min-width: 0; }
+.filters :global(.button) { min-height: 38px; padding-inline: 20px; }
+.toolbar { flex-wrap: wrap; }
+.environment { display: inline-flex; padding: 3px 9px; border-radius: 99px; font-size: 10px; font-weight: 500; white-space: nowrap; border: 1px solid transparent; }
+.production { background: #0bc89d18; color: #4fe3b7; border-color: #13ac8640; }
+.sandbox { background: #f0b34816; color: #f0c774; border-color: #bb873e40; }
+.unspecified { background: #8c99c318; color: #bdc7e4; border-color: #7886b340; }
+.reference { font-family: monospace; font-size: 11px; max-width: 210px; overflow-wrap: anywhere; }
+.empty { padding: 2.5rem 1rem; text-align: center; color: #b6c2e5; }
+.empty p { margin-top: 5px; }
+.empty button { margin-top: 1rem; }
+.reportNote { padding: 12px 20px; border-top: 1px solid #2b3556; color: #b4bfdf; font-size: 12px; }
+.details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.details dt { font-size: 11px; color: #a9b8df; margin-bottom: 5px; }
+.details dd { font-size: 13px; color: #edf0ff; overflow-wrap: anywhere; }
+.wideDetail { grid-column: 1 / -1; }
+.passwordGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.passwordMessage { margin-bottom: 16px; }
+.page button:focus-visible, .page a:focus-visible, .recentScroll:focus-visible { outline: 2px solid #a28afa; outline-offset: 3px; }
+@media (min-width: 1100px) and (min-height: 700px) {
+  .dashboard { height: calc(100dvh - var(--topbar-height, 56px)); min-height: 0; padding: 12px 20px; }
+  .hero { flex: 0 0 clamp(95px, 15.1vh, 142px); min-height: 0; padding-block: 13px; }
+  .dashboardBody { flex: 1; min-height: 0; grid-template-rows: clamp(91px, 12.9vh, 122px) clamp(78px, 10.7vh, 100px) minmax(138px, 1.1fr) minmax(139px, 1fr); }
+  .overview, .stats, .charts, .panel, .recentPanel { min-height: 0; }
+  .panel { display: flex; flex-direction: column; }
+  .statusRows { flex: 1; min-height: 0; margin-top: 12px; gap: clamp(9px, 1.6vh, 15px); }
+  .volumeChart { flex: 1; height: 0; min-height: 0; margin-top: 8px; }
+  .cardHeader { flex-shrink: 0; }
+  .recentScroll { flex: 1; min-height: 0; max-height: none; }
+  .dashboardScope { flex-shrink: 0; }
+}
+@media (min-width: 1100px) and (max-width: 1350px) {
+  .financialCard { gap: 12px; padding-inline: 12px; }
+  .financialCopy h2 { font-size: 10px; }
+  .financialCopy > strong { font-size: 20px; }
+  .financialCard .metricIcon { width: 42px; height: 42px; flex-basis: 42px; }
+  .miniTrend { width: 24%; height: 37px; right: 9px; }
+  .change small { display: none; }
+  .progressCard { gap: 12px; }
+  .attention a { gap: 10px; }
+  .attention .metricIcon { width: 42px; height: 42px; flex-basis: 42px; }
+  .attention a > div > span { font-size: 10px; max-width: 100px; padding-right: 10px; }
+  .attentionChevron { right: 10px; bottom: 15px; }
+  .statusRow { grid-template-columns: minmax(125px, .7fr) minmax(0, 1fr) 18px; gap: 8px; font-size: 11px; }
+  .scopeBadge { font-size: 10px; min-height: 27px; padding: 4px 8px; }
+}
+@media (min-width: 1100px) and (min-height: 700px) and (max-height: 800px) {
+  .dashboard { padding: 10px 14px; gap: 8px; }
+  .dashboardBody { gap: 8px; grid-template-rows: 91px 78px minmax(138px, 1.1fr) minmax(139px, 1fr); }
+  .hero { flex-basis: 95px; padding: 10px 18px; }
+  .hero h1 { font-size: 28px; }
+  .hero .eyebrow { font-size: 8px; margin-bottom: 2px; }
+  .heroCopy > p:not(.eyebrow) { font-size: 11px; margin-top: 4px; }
+  .heroActions { margin-top: 5px; }
+  .heroActions button { font-size: 9px; min-height: 19px; padding: 2px 8px; }
+  .heroTagline { font-size: 13px; }
+  .heroTagline span { margin-top: 6px; }
+  .progressCard, .attention a { padding: 10px 12px; }
+  .progressCard .metricIcon { width: 42px; height: 42px; flex-basis: 42px; }
+  .progressHeading { margin-bottom: 6px; }
+  .progressHeading strong { font-size: 22px; }
+  .progressNote { margin-top: 5px; font-size: 8px; }
+  .progress { height: 7px; }
+  .attention a > div { padding-top: 0; }
+  .attention strong { font-size: 23px; }
+  .financialCard { padding-block: 9px; }
+  .financialCard .metricIcon { width: 42px; height: 42px; flex-basis: 42px; }
+  .financialCopy h2 { margin: 0 0 4px; font-size: 10px; }
+  .financialCopy > strong { font-size: 20px; }
+  .change { font-size: 10px; margin-top: 4px; }
+  .change small { display: none; }
+  .miniTrend { height: 34px; bottom: 9px; }
+  .panel { padding: 9px 12px; }
+  .cardHeader h2 { font-size: 12px; }
+  .cardHeader p { font-size: 10px; }
+  .scopeBadge { min-height: 25px; font-size: 9px; }
+  .statusRows { gap: 8px; margin-top: 9px; }
+  .statusRow, .statusRow strong { font-size: 10px; }
+  .track { height: 8px; }
+  .recentPanel { padding: 8px 10px 6px; }
+  .recentPanel .cardHeader { padding-bottom: 5px; }
+  .viewAll { min-height: 26px; padding: 4px 9px; font-size: 9px; }
+  .page .recentScroll th, .page .recentScroll td { font-size: 9px; padding: 3px 8px; }
+  .page .recentScroll :global(.status-badge) { font-size: 9px; padding: 1px 8px; }
+  .dashboardScope { font-size: 7px; margin-top: 3px; }
+}
+@media (max-width: 1099px) {
+  .dashboard { padding: 18px; gap: 12px; }
+  .dashboardBody { gap: 12px; }
+  .overview { grid-template-columns: 1fr; }
+  .progressCard { min-height: 115px; }
+  .attention a { min-height: 105px; }
+  .charts { grid-template-columns: 1fr 1fr; }
+  .stats { gap: 9px; }
+  .financialCard { padding: 12px; gap: 10px; }
+  .financialCard .metricIcon { width: 38px; height: 38px; flex-basis: 38px; }
+  .financialCard .metricIcon svg { width: 24px; height: 24px; }
+  .financialCopy h2 { font-size: 10px; }
+  .financialCopy > strong { font-size: 18px; }
+  .change small { display: none; }
+  .miniTrend { width: 27%; height: 30px; right: 9px; bottom: 10px; }
+  .statusRow { grid-template-columns: minmax(110px, 1fr) minmax(0, 1.1fr) 18px; gap: 7px; font-size: 10px; }
+  .cardHeader h2 { font-size: 13px; }
+  .cardHeader p { font-size: 10px; }
+  .scopeBadge { min-height: 26px; padding: 4px 7px; font-size: 9px; }
+  .statusRows { margin-top: 20px; gap: 15px; }
+  .passwordGrid, .details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters { grid-template-columns: minmax(170px, 1.5fr) 1fr 1fr auto; gap: 9px; padding: 14px; }
+  .filters :global(.button) { padding-inline: 12px; }
+}
+@media (max-width: 760px) {
+  .hero { min-height: 155px; padding: 17px; }
+  .heroTagline { display: none; }
+  .hero h1 { font-size: 29px; }
+  .heroCopy > p:not(.eyebrow) { font-size: 12px; max-width: 300px; }
+  .charts { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr; }
+  .financialCard { min-height: 100px; gap: 20px; padding: 15px; }
+  .financialCard .metricIcon { width: 54px; height: 54px; flex-basis: 54px; }
+  .financialCopy h2 { font-size: 12px; }
+  .financialCopy > strong { font-size: 24px; }
+  .change small { display: inline; }
+  .miniTrend { width: 25%; height: 45px; right: 18px; bottom: 15px; }
+  .panel { padding: 13px; }
+  .cardHeader h2 { font-size: 14px; }
+  .cardHeader p { font-size: 11px; }
+  .statusRow { grid-template-columns: minmax(130px, .7fr) minmax(0, 1fr) 20px; font-size: 12px; }
+  .statusRows { margin: 20px 0 8px; }
+  .volumeChart { height: 175px; }
+  .recentScroll { max-height: 215px; }
+  .recentScroll table { min-width: 750px; }
+  .filters { grid-template-columns: 1fr 1fr; }
+  .filters > label:first-child { grid-column: 1 / -1; }
+  .filters > button { grid-column: 1 / -1; justify-self: end; }
+}
+@media (max-width: 480px) {
+  .page { padding: 18px 14px; }
+  .dashboard { padding: 12px; }
+  .hero { min-height: 159px; padding: 15px; }
+  .hero h1 { font-size: 26px; }
+  .hero .eyebrow { font-size: 9px; }
+  .progressCard { padding: 13px; gap: 12px; }
+  .progressCard > .metricIcon { width: 40px; height: 40px; flex-basis: 40px; }
+  .progressHeading strong { font-size: 21px; }
+  .progressHeading span { font-size: 10px; }
+  .progressNote { font-size: 9px; }
+  .attention { gap: 10px; }
+  .attention a { padding: 12px; gap: 10px; flex-direction: column; min-height: 145px; }
+  .attention .metricIcon { width: 36px; height: 36px; flex-basis: 36px; }
+  .attention .metricIcon svg { width: 23px; height: 23px; }
+  .attention a > div { padding: 0; align-self: stretch; }
+  .attention strong { font-size: 23px; }
+  .attention a > div > span { font-size: 10px; margin-top: 2px; padding-right: 10px; }
+  .attentionChevron { width: 13px; right: 8px; bottom: 14px; }
+  .financialCard { gap: 13px; }
+  .financialCopy > strong { font-size: 22px; }
+  .change small { display: none; }
+  .statusRow { grid-template-columns: minmax(112px, .75fr) minmax(0, 1fr) 17px; gap: 8px; font-size: 10px; }
+  .cardHeader h2 { font-size: 13px; }
+  .cardHeader p { font-size: 10px; }
+  .scopeBadge { padding: 4px 6px; font-size: 8px; min-height: 25px; }
+  .recentPanel .cardHeader { flex-wrap: wrap; }
+  .viewAll { font-size: 10px; min-height: 28px; }
+  .passwordGrid, .details { grid-template-columns: 1fr; }
+  .error { align-items: flex-start; flex-direction: column; }
+  .filters { padding: 12px; gap: 10px; }
+  .filters label { font-size: 10px; }
+}

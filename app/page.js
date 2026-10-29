@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardPath } from '../lib/auth/dashboardPath';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -9,13 +10,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      router.replace('/login');
-    } else if (user.role === 'super_admin') {
-      router.replace('/admin/dashboard');
-    } else {
-      router.replace('/company/dashboard');
-    }
+    router.replace(getDashboardPath(user));
   }, [user, loading, router]);
 
   return (

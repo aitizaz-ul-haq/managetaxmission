@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '../../../../../lib/mongodb';
 import User from '../../../../../models/User';
+import Company from '../../../../../models/Company';
 import { requireAdmin } from '../../../../../lib/auth/requireAdmin';
 import { validateUser } from '../../../../../lib/validators/userValidator';
 import { hashPassword } from '../../../../../lib/auth/hashPassword';
@@ -28,24 +29,29 @@ export async function PUT(request, { params }) {
 
   await connectDB();
 
+  const duplicateEmail = await User.exists({ email: body.email.toLowerCase().trim(), _id: { $ne: params.id } });
+  if (duplicateEmail) {
+    return NextResponse.json({ errors: ['Email already in use'] }, { status: 422 });
+  }
+  if (body.role === 'company_user' && !(await Company.exists({ _id: body.companyId }))) {
+    return NextResponse.json({ errors: ['Company not found'] }, { status: 422 });
+  }
+
   const updateData = {
     fullName: body.fullName,
     email: body.email.toLowerCase().trim(),
     phone: body.phone || '',
     role: body.role,
     personnelType: body.role === 'company_user' ? body.personnelType : null,
-    companyId: body.companyId || null,
+    companyId: body.role === 'company_user' ? body.companyId : null,
     status: body.status,
   };
 
   if (body.password && body.password.trim()) {
-    if (body.password.length < 8) {
-      return NextResponse.json({ errors: ['Password must be at least 8 characters'] }, { status: 422 });
-    }
     updateData.password = await hashPassword(body.password);
   }
 
-  const user = await User.findByIdAndUpdate(params.id, updateData, { new: true }).lean();
+  const user = await User.findByIdAndUpdate(params.id, updateData, { new: true, runValidators: true }).lean();
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
   const { password, ...safeUser } = user;
   return NextResponse.json({ user: safeUser });

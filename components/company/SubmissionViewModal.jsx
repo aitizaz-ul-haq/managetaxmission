@@ -17,7 +17,7 @@ function Field({ label, value, span }) {
   );
 }
 
-export default function SubmissionViewModal({ open, onClose, submission }) {
+export default function SubmissionViewModal({ open, onClose, submission, invoicesHref = '/company/fbr-records' }) {
   const router = useRouter();
   const { user } = useAuth();
   const modalRef = useRef(null);
@@ -82,7 +82,7 @@ export default function SubmissionViewModal({ open, onClose, submission }) {
             </button>
             <button
               className="button button-sm button-primary"
-              onClick={() => router.push('/company/fbr-records')}
+              onClick={() => router.push(invoicesHref)}
             >
               See invoice from FBR
             </button>

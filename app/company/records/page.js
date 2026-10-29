@@ -1,16 +1,22 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import SubmissionViewModal from '../../../components/company/SubmissionViewModal';
 import PasswordConfirmModal from '../../../components/company/PasswordConfirmModal';
+import PortalFilterBar from '../../../components/portal/PortalFilterBar';
 
-export default function CompanyRecordsPage() {
+function CompanyRecordsContent() {
   const router = useRouter();
+  const params = useSearchParams();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [draftSearch, setDraftSearch] = useState('');
+  const [draftStatus, setDraftStatus] = useState('all');
+  const [loadError, setLoadError] = useState('');
+  const handledRecord = useRef('');
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 12;
 
@@ -23,12 +29,32 @@ export default function CompanyRecordsPage() {
   async function loadSubmissions() {
     const res = await fetch('/api/company/submissions', { cache: 'no-store' });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unable to load submissions.');
     setSubmissions(data.submissions || []);
   }
 
   useEffect(() => {
-    loadSubmissions().finally(() => setLoading(false));
+    loadSubmissions().catch((error) => setLoadError(error.message)).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const value = params.get('search') || '';
+    const status = params.get('status') || 'all';
+    setSearch(value);
+    setDraftSearch(value);
+    setStatusFilter(status);
+    setDraftStatus(status);
+    setCurrentPage(1);
+  }, [params]);
+
+  useEffect(() => {
+    const id = params.get('record');
+    if (!id || loading || handledRecord.current === id) return;
+    handledRecord.current = id;
+    const record = submissions.find((item) => item._id === id);
+    if (record) setViewing(record);
+    else setLoadError('This submission is unavailable. Refresh the list and try again.');
+  }, [params, loading, submissions]);
 
   const visibleSubmissions = useMemo(
     () => submissions
@@ -108,31 +134,33 @@ export default function CompanyRecordsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Submissions</h1>
-          <p className="page-subtitle">Successfully submitted submissions</p>
+          <p className="page-subtitle">Manage your company’s drafts, submissions, and tax activity.</p>
         </div>
         <Link href="/company/submissions/new" className="button button-primary">
           + New Submission
         </Link>
       </div>
 
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ maxWidth: '360px', flex: 1, minWidth: '220px' }}>
+      <PortalFilterBar label="Filter company submissions" onSubmit={(event) => { event.preventDefault(); setSearch(draftSearch); setStatusFilter(draftStatus); setCurrentPage(1); }}>
+        <label htmlFor="company-submission-search">Search submissions
           <input
+            id="company-submission-search"
             className="input"
             type="search"
             name="submission-filter"
             autoComplete="off"
             placeholder="Filter by buyer, date, period, or amount…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={draftSearch}
+            onChange={(e) => setDraftSearch(e.target.value)}
           />
-        </div>
+        </label>
 
-        <div style={{ minWidth: '180px' }}>
+        <label htmlFor="company-submission-status">Submission status
           <select
+            id="company-submission-status"
             className="select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={draftStatus}
+            onChange={(e) => setDraftStatus(e.target.value)}
           >
             <option value="all">All statuses</option>
             <option value="draft">Draft</option>
@@ -141,8 +169,11 @@ export default function CompanyRecordsPage() {
             <option value="submitted">Submitted</option>
             <option value="failed">Failed</option>
           </select>
-        </div>
-      </div>
+        </label>
+        <button className="button button-primary" type="submit">Filter</button>
+      </PortalFilterBar>
+
+      {loadError && <div className="alert alert-error" role="alert">{loadError}<button type="button" className="button button-secondary button-sm" onClick={() => { setLoadError(''); setLoading(true); loadSubmissions().catch((error) => setLoadError(error.message)).finally(() => setLoading(false)); }}>Try again</button></div>}
 
       {loading ? (
         <div className="loading-spinner"><p>Loading…</p></div>
@@ -189,15 +220,7 @@ export default function CompanyRecordsPage() {
                         <td>{s.taxPeriodMonth}/{s.taxPeriodYear}</td>
                         <td><span className="status-badge neutral">{s.scenarioId || '—'}</span></td>
                         <td>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '0.18rem 0.55rem',
-                            borderRadius: '999px',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            background: (s.fbrEnvironment || 'sandbox') === 'production' ? '#dff5e5' : '#fff4c7',
-                            color: (s.fbrEnvironment || 'sandbox') === 'production' ? '#1f6d3b' : '#7a5b00',
-                          }}>
+                          <span className={`environment-badge ${s.fbrEnvironment || 'sandbox'}`}>
                             {(s.fbrEnvironment || 'sandbox').charAt(0).toUpperCase() + (s.fbrEnvironment || 'sandbox').slice(1)}
                           </span>
                         </td>
@@ -284,4 +307,8 @@ export default function CompanyRecordsPage() {
       />
     </div>
   );
+}
+
+export default function CompanyRecordsPage() {
+  return <Suspense fallback={<div className="loading-spinner">Loading submissions…</div>}><CompanyRecordsContent /></Suspense>;
 }

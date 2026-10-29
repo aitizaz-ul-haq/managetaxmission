@@ -1,0 +1,36 @@
+.shell {
+  --sidebar-width: 240px;
+  --topbar-height: 56px;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  isolation: isolate;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: calc(100% - var(--sidebar-width));
+  max-width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  min-height: 100dvh;
+  margin-left: var(--sidebar-width);
+}
+
+.content > main { flex: 1; min-width: 0; outline: none; }
+.backdrop { display: none; position: fixed; inset: 0; z-index: 180; margin: 0; padding: 0; border: 0; background: rgba(3, 7, 22, 0.72); }
+.skipLink { position: fixed; top: 8px; left: 8px; z-index: 300; padding: 9px 14px; border: 1px solid #b9a0ff; border-radius: 7px; background: #232849; color: #fff; font-size: 14px; font-weight: 600; transform: translateY(calc(-100% - 16px)); }
+.skipLink:focus { outline: 2px solid #b9a0ff; outline-offset: 3px; transform: translateY(0); }
+
+@media (max-width: 820px) {
+  .content { width: 100%; max-width: 100%; margin-left: 0; }
+  .backdrop { display: block; }
+}
+
+@media print {
+  .shell { display: block; min-height: 0; }
+  .content { display: block; width: 100%; max-width: none; min-height: 0; margin: 0; }
+  .content > header, .shell > aside, .backdrop, .skipLink { display: none !important; }
+}

@@ -6,7 +6,7 @@ const PROVINCES = ['Islamabad', 'Punjab', 'Sindh', 'KPK', 'Balochistan', 'AJK', 
 const emptyBranch = { name: '', address: '', principalActivity: '' };
 
 const emptyAccountant = { fullName: '', email: '', phone: '', password: '', status: 'active' };
-const emptySupervisor = { fullName: '', email: '', phone: '', status: 'active' };
+const emptySupervisor = { fullName: '', email: '', phone: '', password: '', status: 'active' };
 
 const emptyForm = {
   registrationNo: '', referenceNo: '',
@@ -34,7 +34,7 @@ export default function CompanyForm({ initialData, onSave, onCancel }) {
           ? initialData.branches
           : [{ ...emptyBranch }],
       accountant: { ...emptyAccountant, ...(initialData.accountant || {}), password: '' },
-      supervisor: { ...emptySupervisor, ...(initialData.supervisor || {}) },
+      supervisor: { ...emptySupervisor, ...(initialData.supervisor || {}), password: '' },
       settings: { ...emptyForm.settings, ...(initialData.settings || {}) },
     };
   });
@@ -255,7 +255,7 @@ export default function CompanyForm({ initialData, onSave, onCancel }) {
                 value={form.accountant.password || ''}
                 onChange={(e) => setAccountant('password', e.target.value)}
                 required={!isEdit}
-                minLength={!isEdit ? 8 : undefined}
+                minLength={8}
                 autoComplete="new-password"
               />
             </div>
@@ -264,7 +264,7 @@ export default function CompanyForm({ initialData, onSave, onCancel }) {
 
         <div className="form-subsection">
           <h4 className="form-subsection-title">Supervisor</h4>
-          <p className="form-subsection-hint">Reporting contact only — does not log in to the application.</p>
+          <p className="form-subsection-hint">Logs in to view submission progress, FBR invoices, and reports. {isEdit && 'Set a password to enable sign-in for an existing reporting contact.'}</p>
           <div className="form-grid">
             <div className="form-group">
               <label>Full Name <span className="required">*</span></label>
@@ -277,6 +277,21 @@ export default function CompanyForm({ initialData, onSave, onCancel }) {
             <div className="form-group">
               <label>Phone</label>
               <input className="input" value={form.supervisor.phone} onChange={(e) => setSupervisor('phone', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>
+                {isEdit ? 'New Password (leave blank to keep)' : 'Login Password'}
+                {!isEdit && <span className="required"> *</span>}
+              </label>
+              <input
+                className="input"
+                type="password"
+                value={form.supervisor.password || ''}
+                onChange={(e) => setSupervisor('password', e.target.value)}
+                required={!isEdit}
+                minLength={8}
+                autoComplete="new-password"
+              />
             </div>
           </div>
         </div>

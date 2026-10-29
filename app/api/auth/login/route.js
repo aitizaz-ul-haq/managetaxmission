@@ -10,7 +10,7 @@ export async function POST(request) {
     const body = await request.json();
     const { email, password } = body;
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
@@ -25,8 +25,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Your account is inactive. Contact admin.' }, { status: 403 });
     }
 
-    // Supervisors are reporting-only contacts and cannot sign in.
-    if (user.personnelType === 'supervisor' || !user.password) {
+    // Existing reporting contacts need an administrator to set a password first.
+    if (!user.password) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
@@ -35,21 +35,27 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    await User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() });
-
     const tokenPayload = {
       userId: user._id.toString(),
       fullName: user.fullName,
       email: user.email,
       role: user.role,
-      companyId: user.companyId ? user.companyId.toString() : null,
+      personnelType: user.personnelType || null,
+      companyId: user.role === 'company_user' && user.companyId ? user.companyId.toString() : null,
       companyName: null,
     };
 
-    if (user.companyId) {
-      const company = await Company.findById(user.companyId).select('companyName').lean();
-      if (company) tokenPayload.companyName = company.companyName;
+    if (user.role === 'company_user') {
+      const company = user.companyId
+        ? await Company.findById(user.companyId).select('companyName status').lean()
+        : null;
+      if (!company || company.status !== 'active') {
+        return NextResponse.json({ error: 'Your company account is unavailable. Contact admin.' }, { status: 403 });
+      }
+      tokenPayload.companyName = company.companyName;
     }
+
+    await User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() });
 
     const token = signToken(tokenPayload);
 

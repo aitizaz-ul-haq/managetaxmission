@@ -4,7 +4,7 @@ export default function TotalsCard({ totalSaleValue, totalTaxAmount, totalBillAm
   return (
     <div className="form-card">
       <h3 className="form-section-title">Totals (Auto Calculated)</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+      <div className="form-grid-3">
         <div className="stat-card">
           <p className="stat-label">Total Sale Value</p>
           <p className="stat-value" style={{ fontSize: '1.25rem' }}>PKR {fmt(totalSaleValue)}</p>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '../../../../lib/mongodb';
 import User from '../../../../models/User';
+import Company from '../../../../models/Company';
 import { requireAdmin } from '../../../../lib/auth/requireAdmin';
 import { validateUser } from '../../../../lib/validators/userValidator';
 import { hashPassword } from '../../../../lib/auth/hashPassword';
@@ -37,16 +38,19 @@ export async function POST(request) {
     return NextResponse.json({ errors: ['Email already in use'] }, { status: 422 });
   }
 
-  const isSupervisor = body.role === 'company_user' && body.personnelType === 'supervisor';
-  const hashed = body.password ? await hashPassword(body.password) : '';
+  if (body.role === 'company_user' && !(await Company.exists({ _id: body.companyId }))) {
+    return NextResponse.json({ errors: ['Company not found'] }, { status: 422 });
+  }
+
+  const hashed = await hashPassword(body.password);
   const newUser = await User.create({
     fullName: body.fullName,
     email: body.email.toLowerCase().trim(),
     phone: body.phone || '',
-    password: isSupervisor ? '' : hashed,
+    password: hashed,
     role: body.role,
     personnelType: body.role === 'company_user' ? body.personnelType : null,
-    companyId: body.companyId || null,
+    companyId: body.role === 'company_user' ? body.companyId : null,
     status: body.status || 'active',
     createdBy: adminUser.userId,
   });

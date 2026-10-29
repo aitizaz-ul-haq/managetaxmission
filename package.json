@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:supervisor": "node --experimental-vm-modules tests/supervisor-auth.test.cjs && node --experimental-vm-modules tests/supervisor-api.test.cjs && node --experimental-vm-modules tests/supervisor-reporting.test.cjs && node --experimental-vm-modules tests/supervisor-data.test.cjs",
+    "test:admin": "node --experimental-vm-modules tests/admin-dashboard-api.test.cjs && node --experimental-vm-modules tests/admin-search.test.cjs",
+    "test:company": "node --experimental-vm-modules tests/company-dashboard-api.test.cjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -1,0 +1,27 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.row > :global(.form-group) {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.row > :global(.button) {
+  flex: 0 0 auto;
+  min-height: 39px;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .row > :global(.form-group) {
+    flex-basis: 100%;
+  }
+
+  .row > :global(.button) {
+    width: 100%;
+  }
+}

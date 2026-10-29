@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import UserTable from '../../../components/admin/UserTable';
+import filterStyles from '../../../components/admin/AdminFilterBar.module.css';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [companyFilter, setCompanyFilter] = useState('all');
+  const [filters, setFilters] = useState({ personnelType: 'all', companyId: 'all' });
+  const [appliedFilters, setAppliedFilters] = useState({ personnelType: 'all', companyId: 'all' });
 
   const load = () => {
     setLoading(true);
@@ -27,11 +28,16 @@ export default function AdminUsersPage() {
   }, []);
 
   const filteredUsers = users.filter((u) => {
-    const matchesType = typeFilter === 'all' || u.personnelType === typeFilter;
+    const matchesType = appliedFilters.personnelType === 'all' || u.personnelType === appliedFilters.personnelType;
     const userCompanyId = u.companyId?._id || u.companyId || '';
-    const matchesCompany = companyFilter === 'all' || userCompanyId === companyFilter;
+    const matchesCompany = appliedFilters.companyId === 'all' || userCompanyId === appliedFilters.companyId;
     return matchesType && matchesCompany;
   });
+
+  const applyFilters = (e) => {
+    e.preventDefault();
+    setAppliedFilters(filters);
+  };
 
   return (
     <>
@@ -45,28 +51,37 @@ export default function AdminUsersPage() {
             + Add Users
           </Link>
         </div>
-        <div className="filter-bar">
-          <label className="filter-label">Filter by type</label>
-          <select
-            className="select"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="accountant">Accountant</option>
-            <option value="supervisor">Supervisor</option>
-          </select>
-          <label className="filter-label">Filter by company</label>
-          <select
-            className="select"
-            value={companyFilter}
-            onChange={(e) => setCompanyFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            {companies.map((c) => (
-              <option key={c._id} value={c._id}>{c.companyName}</option>
-            ))}
-          </select>
+        <div className="form-card">
+          <form className={filterStyles.row} onSubmit={applyFilters} aria-label="Filter users">
+            <div className="form-group">
+              <label htmlFor="user-type-filter">Filter by type</label>
+              <select
+                id="user-type-filter"
+                className="select"
+                value={filters.personnelType}
+                onChange={(e) => setFilters((previous) => ({ ...previous, personnelType: e.target.value }))}
+              >
+                <option value="all">All</option>
+                <option value="accountant">Accountant</option>
+                <option value="supervisor">Supervisor</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="user-company-filter">Filter by company</label>
+              <select
+                id="user-company-filter"
+                className="select"
+                value={filters.companyId}
+                onChange={(e) => setFilters((previous) => ({ ...previous, companyId: e.target.value }))}
+              >
+                <option value="all">All</option>
+                {companies.map((c) => (
+                  <option key={c._id} value={c._id}>{c.companyName}</option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="button button-primary">Filter</button>
+          </form>
         </div>
         {loading ? (
           <div className="loading-spinner"><p>Loading…</p></div>

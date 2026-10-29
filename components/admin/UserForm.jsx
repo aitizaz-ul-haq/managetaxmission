@@ -22,7 +22,7 @@ export default function UserForm({ initialData, onSave, onCancel, isNew = false 
 
   const isCompanyUser = form.role === 'company_user';
   const isSupervisor = isCompanyUser && form.personnelType === 'supervisor';
-  const passwordRequired = isNew && !isSupervisor;
+  const passwordRequired = isNew;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -71,10 +71,10 @@ export default function UserForm({ initialData, onSave, onCancel, isNew = false 
               value={form.password || ''}
               onChange={(e) => set('password', e.target.value)}
               required={passwordRequired}
-              minLength={passwordRequired ? 8 : undefined}
-              disabled={isSupervisor}
-              placeholder={isSupervisor ? 'Supervisors do not log in' : ''}
+              minLength={8}
+              autoComplete="new-password"
             />
+            {isSupervisor && !isNew && <small>Set a password to enable sign-in for an existing reporting contact.</small>}
           </div>
           <div className="form-group">
             <label>Role <span className="required">*</span></label>
@@ -88,7 +88,7 @@ export default function UserForm({ initialData, onSave, onCancel, isNew = false 
               <label>Personnel Type <span className="required">*</span></label>
               <select className="select" value={form.personnelType || 'accountant'} onChange={(e) => set('personnelType', e.target.value)} required>
                 <option value="accountant">Accountant (logs in, works on submissions)</option>
-                <option value="supervisor">Supervisor (reporting only, no login)</option>
+                <option value="supervisor">Supervisor (views progress and reports)</option>
               </select>
             </div>
           )}

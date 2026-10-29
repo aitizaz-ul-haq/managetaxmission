@@ -7,8 +7,7 @@ const UserSchema = new mongoose.Schema(
     phone: { type: String, default: '', trim: true },
     password: { type: String, default: '' },
     role: { type: String, enum: ['super_admin', 'company_user'], required: true },
-    // Distinguishes company personnel: accountant logs in and works on submissions,
-    // supervisor is a reporting-only contact with no application access.
+    // Accountants manage submissions; supervisors have a read-only reporting dashboard.
     personnelType: { type: String, enum: ['accountant', 'supervisor', null], default: null },
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },

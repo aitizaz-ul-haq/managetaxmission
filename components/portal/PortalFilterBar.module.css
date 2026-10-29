@@ -1,0 +1,8 @@
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 18px 20px; margin-bottom: 20px; }
+.filters > label { display: flex; flex: 1 1 180px; min-width: 0; flex-direction: column; gap: 7px; color: #c9d2ec; font-size: 12px; font-weight: 500; }
+.filters > label:first-child { flex-grow: 2; }
+.filters > :global(.button) { min-width: 100px; min-height: 39px; justify-content: center; }
+@media (max-width: 580px) {
+  .filters { gap: 12px; padding: 15px; }
+  .filters > label, .filters > :global(.button) { flex-basis: 100%; width: 100%; }
+}

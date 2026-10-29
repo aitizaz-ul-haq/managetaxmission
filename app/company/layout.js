@@ -2,8 +2,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import CompanySidebar from '../../components/layout/CompanySidebar';
-import Topbar from '../../components/layout/Topbar';
+import PortalShell from '../../components/layout/PortalShell';
+import { getDashboardPath, isSupervisor } from '../../lib/auth/dashboardPath';
 
 export default function CompanyLayout({ children }) {
   const { user, loading } = useAuth();
@@ -13,8 +13,8 @@ export default function CompanyLayout({ children }) {
     if (loading) return;
     if (!user) {
       router.replace('/login');
-    } else if (user.role !== 'company_user') {
-      router.replace('/admin/dashboard');
+    } else if (user.role !== 'company_user' || isSupervisor(user)) {
+      router.replace(getDashboardPath(user));
     }
   }, [user, loading, router]);
 
@@ -22,15 +22,7 @@ export default function CompanyLayout({ children }) {
     return <div className="loading-spinner"><p>Loading…</p></div>;
   }
 
-  if (!user || user.role !== 'company_user') return null;
+  if (!user || user.role !== 'company_user' || isSupervisor(user)) return null;
 
-  return (
-    <div className="app-shell">
-      <CompanySidebar />
-      <div className="main-content">
-        <Topbar />
-        {children}
-      </div>
-    </div>
-  );
+  return <PortalShell>{children}</PortalShell>;
 }

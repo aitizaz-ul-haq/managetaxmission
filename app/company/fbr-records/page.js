@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import FbrSuccessModal from '../../../components/company/FbrSuccessModal';
 import ReceiptViewModal from '../../../components/company/ReceiptViewModal';
 import PasswordConfirmModal from '../../../components/company/PasswordConfirmModal';
+import PortalFilterBar from '../../../components/portal/PortalFilterBar';
 import {
   getFbrInvoiceStatus,
   getFbrStatusBadgeClass,
@@ -17,6 +18,10 @@ export default function FbrRecordsPage() {
   const [lastReceipt, setLastReceipt] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [search, setSearch] = useState('');
+  const [draftSearch, setDraftSearch] = useState('');
+  const [environment, setEnvironment] = useState('all');
+  const [draftEnvironment, setDraftEnvironment] = useState('all');
+  const [loadError, setLoadError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 12;
   // Keep the filter read-only until focused so Chrome/password managers skip
@@ -32,11 +37,12 @@ export default function FbrRecordsPage() {
   async function loadReceipts() {
     const res = await fetch('/api/fbr/receipts', { cache: 'no-store' });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unable to load FBR invoices.');
     setReceipts(data.receipts || []);
   }
 
   useEffect(() => {
-    loadReceipts().finally(() => setLoading(false));
+    loadReceipts().catch((error) => setLoadError(error.message)).finally(() => setLoading(false));
   }, []);
 
   async function handleTestSubmit() {
@@ -95,7 +101,7 @@ export default function FbrRecordsPage() {
   }, [search]);
 
   const filtered = useMemo(() => {
-    const sorted = [...receipts].sort((a, b) => {
+    const sorted = receipts.filter((receipt) => environment === 'all' || receipt.environment === environment).sort((a, b) => {
       const aTime = new Date(a.receivedAt || a.createdAt || 0).getTime();
       const bTime = new Date(b.receivedAt || b.createdAt || 0).getTime();
       return bTime - aTime;
@@ -113,7 +119,7 @@ export default function FbrRecordsPage() {
         .toLowerCase()
         .includes(q);
     });
-  }, [receipts, search]);
+  }, [receipts, search, environment]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -146,8 +152,10 @@ export default function FbrRecordsPage() {
         </div>
       )}
 
-      <div style={{ marginBottom: '1rem', maxWidth: '360px' }}>
+      <PortalFilterBar label="Filter company FBR invoices" onSubmit={(event) => { event.preventDefault(); setSearch(draftSearch); setEnvironment(draftEnvironment); setCurrentPage(1); }}>
+        <label htmlFor="company-fbr-search">Search invoices
         <input
+          id="company-fbr-search"
           className="input"
           type="text"
           name="fbr-invoice-filter"
@@ -161,10 +169,15 @@ export default function FbrRecordsPage() {
           readOnly={searchReadOnly}
           onFocus={() => setSearchReadOnly(false)}
           placeholder="Filter by submission, status, reference, date…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={draftSearch}
+          onChange={(e) => setDraftSearch(e.target.value)}
         />
-      </div>
+        </label>
+        <label htmlFor="company-fbr-environment">FBR environment<select id="company-fbr-environment" className="select" value={draftEnvironment} onChange={(event) => setDraftEnvironment(event.target.value)}><option value="all">All environments</option><option value="production">Production</option><option value="sandbox">Sandbox</option></select></label>
+        <button className="button button-primary" type="submit">Filter</button>
+      </PortalFilterBar>
+
+      {loadError && <div className="alert alert-error" role="alert">{loadError}<button type="button" className="button button-secondary button-sm" onClick={() => { setLoadError(''); setLoading(true); loadReceipts().catch((error) => setLoadError(error.message)).finally(() => setLoading(false)); }}>Try again</button></div>}
 
       {loading ? (
         <div className="loading-spinner"><p>Loading…</p></div>
@@ -212,15 +225,7 @@ export default function FbrRecordsPage() {
                         </td>
                         <td><span className="status-badge neutral">{r.invoicePayload?.scenarioId || r.fbrResponse?.scenarioId || '—'}</span></td>
                         <td>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '0.18rem 0.55rem',
-                            borderRadius: '999px',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            background: (r.environment || 'sandbox') === 'production' ? '#dff5e5' : '#fff4c7',
-                            color: (r.environment || 'sandbox') === 'production' ? '#1f6d3b' : '#7a5b00',
-                          }}>
+                          <span className={`environment-badge ${r.environment || 'sandbox'}`}>
                             {(r.environment || 'sandbox').charAt(0).toUpperCase() + (r.environment || 'sandbox').slice(1)}
                           </span>
                         </td>

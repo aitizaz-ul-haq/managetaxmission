@@ -646,7 +646,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
       <div className="form-card" style={{ padding: '0.5rem', overflowX: 'scroll' }}>
         <table style={{ borderCollapse: 'collapse', minWidth: '4260px', fontSize: '0.83rem', tableLayout: 'auto' }}>
           <thead>
-            <tr style={{ background: 'var(--color-primary)', color: '#fff' }}>
+            <tr style={{ background: 'var(--color-table-header, var(--color-primary))', color: '#fff' }}>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '43px' }}>Sr.</th>
               <th colSpan={3} style={thStyle}>Particulars of Buyers</th>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '132px' }}>Sale Origination Province of Supplier</th>
@@ -673,7 +673,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
               <th rowSpan={2} style={{ ...thStyle, minWidth: '180px' }}>Buyer Address</th>
               <th rowSpan={2} style={{ ...thStyle, minWidth: '48px' }}></th>
             </tr>
-            <tr style={{ background: 'var(--color-primary)', color: '#fff' }}>
+            <tr style={{ background: 'var(--color-table-header, var(--color-primary))', color: '#fff' }}>
               <th style={{ ...thStyle, minWidth: '144px' }}>Registration No. (NTN)</th>
               <th style={{ ...thStyle, minWidth: '180px' }}>Name</th>
               <th style={{ ...thStyle, minWidth: '120px' }}>Type</th>
@@ -697,7 +697,7 @@ export default function SubmissionForm({ draftData, submissionId, onSaved }) {
                 <tr
                   key={index}
                   style={{
-                    background: index % 2 === 0 ? '#fff' : 'var(--color-bg-alt, #f9fafb)',
+                    background: index % 2 === 0 ? 'var(--color-surface)' : 'var(--color-bg-alt, #f9fafb)',
                   }}
                 >
                   <td style={{ ...tdStyle, textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>

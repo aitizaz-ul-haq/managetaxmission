@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import filterStyles from '../../../components/admin/AdminFilterBar.module.css';
 
 export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState([]);
@@ -43,7 +44,7 @@ export default function AdminSubmissionsPage() {
         </div>
 
         <div className="form-card">
-          <form onSubmit={applyFilters} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <form onSubmit={applyFilters} className={filterStyles.row}>
             <div className="form-group">
               <label>Company</label>
               <select className="select" value={filters.companyId} onChange={(e) => setFilters((p) => ({ ...p, companyId: e.target.value }))}>

@@ -1,0 +1,486 @@
+.dashboard {
+  --panel-border: rgba(130, 147, 218, .18);
+  --muted: #abb7da;
+  padding: 15px 20px 20px;
+  color: #f5f5ff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.hero { min-height: 142px; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; padding: 22px 23px; border: 1px solid var(--panel-border); border-radius: 11px; background: #101733 url('/images/taxmission_dashboard_title_background.png') center 53% / cover no-repeat; margin-bottom: 11px; }
+.hero::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(12, 17, 42, .23) 0%, transparent 64%); }
+.heroCopy, .heroTagline { position: relative; z-index: 1; }
+.eyebrow { margin: 0 0 7px; text-transform: uppercase; letter-spacing: 1.4px; font-size: 10px; font-weight: 500; color: #c5cbed; }
+.hero h1 { margin: 0 0 8px; font-size: clamp(25px, 2.45vw, 41px); line-height: 1.1; font-weight: 750; letter-spacing: -.8px; color: #f9f8ff; font-family: inherit; }
+.hero h1 span { color: #ff7187; }
+.heroSubtitle { margin: 0; color: #d8ddf3; font-size: 13px; line-height: 1.5; }
+.heroTagline { flex: 0 0 200px; padding: 12px 0 0 24px; margin: -4px 5px -4px 20px; border-left: 1px solid rgba(178, 168, 225, .2); color: #cbd2f7; font-size: 15px; line-height: 1.4; }
+.heroTagline > span { display: block; width: 44px; height: 3px; background: #ff617c; margin-top: 11px; }
+
+.statsGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1.1fr)) repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(88px, auto)); gap: 10px 11px; margin-bottom: 12px; }
+.statCard { --accent: #4d7fff; --accent-rgb: 77, 127, 255; position: relative; overflow: hidden; display: flex; gap: 15px; align-items: flex-start; padding: 12px; border: 1px solid rgba(var(--accent-rgb), .25); border-radius: 11px; background: radial-gradient(ellipse at 5% 0%, rgba(var(--accent-rgb), .12), transparent 75%), linear-gradient(115deg, rgba(28, 36, 66, .96), rgba(20, 28, 54, .96)); grid-column: var(--metric-column); grid-row: var(--metric-row); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), inset 0 -8px 20px rgba(var(--accent-rgb), .025); }
+.blue { --accent: #4b7bff; --accent-rgb: 75, 123, 255; }
+.teal { --accent: #24d7b5; --accent-rgb: 36, 215, 181; }
+.purple { --accent: #aa78ff; --accent-rgb: 150, 95, 255; }
+.amber { --accent: #ffbd55; --accent-rgb: 255, 169, 75; }
+.coral { --accent: #ff6a8b; --accent-rgb: 255, 85, 124; }
+.statIcon, .actionIcon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 43px; height: 43px; color: var(--accent); background: linear-gradient(135deg, rgba(var(--accent-rgb), .42), rgba(var(--accent-rgb), .2)); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .25), 0 3px 12px rgba(var(--accent-rgb), .05); border-radius: 9px; }
+.statIcon svg { width: 24px; height: 24px; filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), .3)); }
+.statIcon { position: relative; z-index: 1; background: linear-gradient(135deg, rgba(var(--accent-rgb), .52), rgba(var(--accent-rgb), .19)); box-shadow: inset 0 1px 2px rgba(255, 255, 255, .12), inset 0 0 0 1px rgba(var(--accent-rgb), .25), 0 4px 15px rgba(var(--accent-rgb), .12); }
+.statContent { min-width: 0; position: relative; z-index: 1; }
+.statCard h2 { margin: 1px 0 6px; color: #d9e0fb; font-size: 11px; font-weight: 400; line-height: 1.3; font-family: inherit; }
+.statValue { margin: 0; font-size: 23px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.statReadout { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.metricChange { display: inline-flex; align-items: center; flex-shrink: 0; gap: 2px; font-size: 10px; font-weight: 600; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.metricChange svg { width: 11px; height: 11px; stroke-width: 2.8; flex-shrink: 0; }
+.metricChange.changePositive { color: #30e4ac; }
+.metricChange.changeNegative { color: #ff5d80; }
+.metricChange.changeWarning { color: #ffbf50; }
+.metricChange.changeUnavailable { color: #aab7da; }
+.statSparkline { position: absolute; right: 12px; bottom: 12px; width: 25%; max-width: 62px; height: 26px; }
+.statSparkline .miniSeries { display: block; width: 100%; height: 100%; }
+.moneyCard { grid-column: 5; grid-row: 1 / 3; flex-direction: column; gap: 0; padding: 12px 14px; background: linear-gradient(150deg, rgba(var(--accent-rgb), .15), rgba(23, 29, 54, .95) 65%); }
+.moneyCard::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 90% -10%, rgba(255, 185, 126, .35), transparent 64%); pointer-events: none; }
+.moneyWave { position: absolute; top: 0; right: 0; width: 100%; height: 38%; pointer-events: none; }
+.moneyCard:last-child { grid-column: 6; }
+.moneyCard h2 { margin-top: 12px; margin-bottom: 8px; position: relative; }
+.moneyValue { font-variant-numeric: tabular-nums; color: #fff; font-size: clamp(18px, 1.6vw, 27px); line-height: 1.15; font-weight: 700; letter-spacing: -.7px; margin: 0; position: relative; overflow-wrap: anywhere; }
+.moneyFooter { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; gap: 8px; margin-top: auto; padding-top: 12px; position: relative; }
+.moneyFooter > .metricChange { font-size: 11px; line-height: 1; }
+.miniSeries { color: var(--accent); width: 91px; height: 36px; overflow: visible; filter: drop-shadow(0 3px 4px rgba(var(--accent-rgb), .2)); }
+
+.analyticsGrid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); gap: 12px; margin-bottom: 12px; align-items: stretch; }
+.detailGrid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 13px; align-items: start; }
+.panel { min-width: 0; padding: 13px 16px; border: 1px solid var(--panel-border); border-radius: 12px; background: linear-gradient(120deg, rgba(31, 35, 65, .88), rgba(17, 26, 51, .88)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .015), 0 3px 12px rgba(0, 0, 0, .045); }
+.panelHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; min-width: 0; }
+.panelHeader > div { min-width: 0; }
+.panelHeader h2 { font-family: inherit; color: #f8f7ff; font-size: 14px; font-weight: 700; line-height: 1.3; margin: 0 0 3px; }
+.panelHeader p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.35; }
+.periodSelect { flex-shrink: 0; max-width: 145px; min-height: 32px; border: 1px solid rgba(141, 152, 219, .24); border-radius: 7px; background: #252c4d; padding: 0 23px 0 9px; color: #f8f7ff; font-size: 10px; font-family: inherit; cursor: pointer; color-scheme: dark; }
+.periodSelect:disabled { cursor: progress; opacity: .65; }
+.periodSelect:focus-visible, .viewAll:focus-visible, .action:focus-visible, .rowAction:focus-visible, .invoiceLink:focus-visible, .performanceCompany:focus-visible, .empty a:focus-visible, .error button:focus-visible { outline: 2px solid #a78aff; outline-offset: 3px; }
+.statusPanel { display: flex; flex-direction: column; }
+.statusBody { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 191px; padding-top: 12px; }
+.donut { flex: 1 1 46%; width: 46%; max-width: 191px; min-width: 100px; overflow: visible; }
+.donutTotal { font-size: 25px; font-weight: 700; fill: #f8f8ff; }
+.donutCaption { font-size: 12px; fill: #f0f1ff; }
+.statusLegend { display: flex; flex: 1 1 48%; flex-direction: column; gap: 15px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.statusLegend li { display: grid; grid-template-columns: 13px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; margin: 0; padding: 0; color: #d8def5; font-size: 11px; white-space: nowrap; }
+.statusLegend strong { font-size: 11px; font-weight: 600; color: #f5f5ff; font-variant-numeric: tabular-nums; }
+.statusDot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.statusPercent { color: #c6cde6; font-size: 10px; font-variant-numeric: tabular-nums; }
+.salesPanel { display: flex; flex-direction: column; }
+.chartLegend { display: flex; justify-content: flex-end; gap: 21px; margin: 10px 0 6px; font-size: 10px; color: #dbe0f5; }
+.chartLegend > span { display: flex; align-items: center; gap: 7px; }
+.chartLegend i { display: inline-block; width: 15px; height: 11px; border-radius: 4px; }
+.saleKey { background: linear-gradient(120deg, #a05bf8, #b787ff); }
+.taxKey { background: linear-gradient(120deg, #ff4770, #ff7293); }
+.salesChart { display: block; width: 100%; height: auto; margin: auto 0 0; min-height: 158px; }
+.chartGridLine { stroke: rgba(140, 152, 209, .13); stroke-width: 1; }
+.chartLabel { fill: #cbd2ea; font-size: 10px; font-family: Arial, Helvetica, sans-serif; }
+.chartEmpty { margin: 2px 0 0; text-align: center; color: var(--muted); font-size: 10px; }
+.quickPanel { padding: 13px 12px 12px; }
+.quickPanel .panelHeader { padding: 0 4px; }
+.actions { display: flex; flex-direction: column; gap: 8px; margin-top: 11px; }
+.action { display: flex; align-items: center; gap: 12px; min-height: 49px; border: 1px solid rgba(132, 148, 209, .13); border-radius: 9px; padding: 0 8px 0 0; background: linear-gradient(110deg, rgba(79, 87, 134, .13), rgba(53, 64, 102, .14)); color: #f7f6ff; text-decoration: none; transition: border-color .15s, background .15s, transform .15s; }
+.action:hover { color: #fff; border-color: rgba(165, 145, 244, .45); background: rgba(112, 102, 166, .2); transform: translateX(2px); }
+.actionIcon { width: 44px; height: 44px; margin-left: 2px; border: 1px solid rgba(var(--accent-rgb), .5); box-shadow: 0 0 13px rgba(var(--accent-rgb), .13), inset 0 0 9px rgba(var(--accent-rgb), .15); }
+.actionIcon svg { width: 24px; height: 24px; }
+.actionCopy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.actionCopy strong { font-size: 11px; font-weight: 600; line-height: 1.15; }
+.actionCopy > span { font-size: 10px; color: #aeb9db; line-height: 1.2; }
+.actionChevron { flex-shrink: 0; width: 15px; height: 15px; color: #dce2ff; }
+.recentPanel { padding: 12px 11px 4px; }
+.recentPanel .panelHeader { padding: 0 5px 10px; }
+.viewAll { min-height: 31px; display: inline-flex; align-items: center; flex-shrink: 0; padding: 0 11px; border-radius: 7px; border: 1px solid rgba(255, 101, 138, .22); background: rgba(255, 101, 138, .07); color: #ff7292; text-decoration: none; font-size: 11px; }
+.viewAll:hover { color: #ff9ab2; background: rgba(255, 101, 138, .14); }
+.tableScroll { overflow-x: auto; border: 1px solid rgba(119, 137, 196, .09); border-radius: 9px; scrollbar-width: thin; scrollbar-color: #4a567c transparent; }
+.recentTable { border-collapse: collapse; width: 100%; font-size: 9px; color: #e4e8f8; background: transparent; }
+.dashboard .recentTable th { font-size: 9px; letter-spacing: 0; font-weight: 500; text-transform: none; color: #c5ceed; background: rgba(111, 118, 174, .15); padding: 9px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid rgba(139, 154, 212, .09); }
+.dashboard .recentTable td { font-size: 9px; padding: 3px 8px; border-bottom: 1px solid rgba(139, 154, 212, .09); white-space: nowrap; line-height: 1.3; color: #e1e6fa; background: transparent; }
+.recentTable tbody tr:last-child td { border-bottom: 0; }
+.recentTable tbody tr:hover { background: var(--color-table-hover, #263354); }
+.dashboard .recentTable .companyCell { width: 155px; min-width: 132px; max-width: 160px; white-space: normal; }
+.companyName { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.recentTable .numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.invoiceLink { color: #d9dffc; text-decoration: none; }
+.invoiceLink:hover { color: #bba0ff; text-decoration: underline; }
+.statusBadge { color: var(--status-color); background: color-mix(in srgb, var(--status-color) 14%, transparent); border: 1px solid color-mix(in srgb, var(--status-color) 45%, transparent); display: inline-flex; align-items: center; justify-content: center; min-width: 69px; padding: 2px 9px; border-radius: 20px; font-size: 9px; line-height: 1.2; }
+.rowAction { display: inline-flex; min-width: 30px; min-height: 20px; align-items: center; justify-content: center; color: #d8dffb; text-decoration: none; letter-spacing: 2px; font-size: 11px; }
+.rowAction:hover { color: #bd95ff; background: rgba(160, 130, 245, .1); border-radius: 5px; }
+.performancePanel { padding: 12px 12px 10px; }
+.performancePanel .panelHeader { padding: 0 3px; }
+.performanceList { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.performanceList > li { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(70px, 1fr) minmax(65px, .8fr); align-items: center; gap: 10px; background: rgba(97, 111, 168, .08); border: 1px solid rgba(127, 145, 206, .09); border-radius: 9px; padding: 8px 7px; }
+.performanceCompany { display: flex; align-items: center; gap: 8px; color: #f0f2ff; text-decoration: none; font-size: 9px; line-height: 1.45; font-weight: 500; }
+.performanceCompany:hover { color: #bba0ff; }
+.companyIcon { flex-shrink: 0; width: 30px; height: 33px; display: inline-flex; align-items: center; justify-content: center; color: #8a9eff; border: 1px solid rgba(70, 111, 248, .18); border-radius: 7px; background: linear-gradient(130deg, rgba(49, 94, 238, .4), rgba(45, 74, 183, .18)); }
+.companyIcon svg { width: 20px; height: 20px; }
+.performanceSale, .performanceTax { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.performanceSale > span, .performanceTax > span { font-size: 8px; white-space: nowrap; color: #b1bcdd; }
+.performanceSale strong, .performanceTax strong { font-size: 11px; font-weight: 600; color: #f0f2ff; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.performanceTax { text-align: right; align-self: start; }
+.performanceTrack { background: rgba(115, 125, 179, .12); height: 7px; border-radius: 5px; margin-top: 1px; overflow: hidden; }
+.performanceTrack > span { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, #945dfb, #ae88fa); }
+.empty { min-height: 146px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 20px; text-align: center; }
+.empty > svg { width: 27px; height: 27px; color: #949bdb; margin-bottom: 3px; }
+.empty strong { font-size: 12px; font-weight: 600; }
+.empty p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+.empty a { color: #b294ff; display: flex; align-items: center; gap: 4px; font-size: 11px; margin-top: 5px; }
+.empty a svg { width: 13px; height: 13px; }
+.error { display: flex; align-items: center; justify-content: space-between; gap: 15px; border: 1px solid rgba(255, 106, 139, .3); border-radius: 9px; background: rgba(107, 38, 73, .3); padding: 14px 16px; margin: 12px 0; }
+.error strong, .error span { display: block; font-size: 12px; line-height: 1.5; }
+.error span { color: #e1bbd0; margin-top: 3px; }
+.error button { flex-shrink: 0; border: 1px solid rgba(255, 133, 164, .4); color: #ffd3df; background: rgba(255, 111, 154, .12); padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+.refreshing { font-size: 11px; color: #c5b0ff; margin: 0 0 9px; }
+.loading { min-height: 410px; border: 1px solid var(--panel-border); border-radius: 12px; background: rgba(23, 31, 60, .6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #bdc7e7; font-size: 13px; }
+.loading p { margin: 0; }
+.spinner { width: 25px; height: 25px; border: 2px solid rgba(169, 144, 245, .2); border-top-color: #a688fa; border-radius: 50%; animation: rotate 1s linear infinite; }
+@keyframes rotate { to { transform: rotate(360deg); } }
+
+@media (min-width: 1301px) {
+  .hero { background-size: 115% 260%; background-position: 70px 45%; }
+  .statusPanel, .salesPanel { align-self: start; height: 252px; }
+  .salesPanel .chartLegend { margin: 8px 0 3px; line-height: 1.2; }
+  .salesPanel .salesChart { flex: 1 1 auto; height: 170px; min-height: 0; }
+  .detailGrid { margin-top: -40px; }
+  .performancePanel { margin-top: 44px; }
+}
+
+@media (min-width: 1750px) {
+  .dashboard { padding: 20px 24px 24px; }
+  .hero { min-height: 156px; }
+  .statsGrid { grid-template-rows: repeat(2, minmax(100px, auto)); }
+  .statCard h2 { font-size: 12px; }
+  .statValue { font-size: 26px; }
+  .panelHeader h2 { font-size: 16px; }
+  .panelHeader p { font-size: 12px; }
+  .action { min-height: 54px; }
+  .statusBody { min-height: 215px; }
+  .statusPanel, .salesPanel { height: 277px; }
+  .donut { max-width: 218px; }
+  .statusLegend li, .statusLegend strong { font-size: 12px; }
+  .dashboard .recentTable td, .dashboard .recentTable th { font-size: 10px; padding: 9px; }
+}
+
+@media (max-width: 1300px) {
+  .dashboard { padding: 15px; }
+  .statsGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .moneyCard { grid-column: 1 / 3; grid-row: 3; min-height: 128px; display: grid; grid-template-columns: 43px minmax(0, 1fr); column-gap: 13px; }
+  .moneyCard:last-child { grid-column: 3 / 5; }
+  .moneyCard .statIcon { grid-row: 1 / 3; }
+  .moneyCard h2 { margin-top: 2px; margin-bottom: 5px; }
+  .moneyValue { font-size: 25px; }
+  .moneyFooter { grid-column: 1 / 3; padding-top: 0; }
+  .miniSeries { height: 30px; width: 110px; }
+  .analyticsGrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  .quickPanel { grid-column: 1 / -1; }
+  .actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+  .action { gap: 8px; min-height: 60px; padding: 5px 7px 5px 0; }
+  .actionIcon { width: 34px; height: 39px; }
+  .actionIcon svg { width: 21px; height: 21px; }
+  .actionChevron { display: none; }
+  .actionCopy strong { font-size: 10px; }
+  .actionCopy > span { font-size: 9px; }
+  .detailGrid { grid-template-columns: minmax(0, 1fr); }
+  .performanceList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard .recentTable td { padding-top: 9px; padding-bottom: 9px; }
+}
+
+@media (max-width: 1000px) {
+  .hero { padding: 20px; min-height: 145px; background-position: 57% center; }
+  .heroTagline { display: none; }
+  .heroCopy { max-width: 85%; }
+  .hero h1 { font-size: 30px; }
+  .heroSubtitle { max-width: 340px; font-size: 12px; }
+  .statCard { gap: 10px; padding: 12px 10px; }
+  .statIcon { width: 35px; height: 38px; }
+  .statIcon svg { width: 22px; height: 22px; }
+  .statCard h2 { font-size: 10px; }
+  .statValue { font-size: 22px; }
+  .statsGrid { gap: 9px; }
+  .analyticsGrid { grid-template-columns: minmax(0, 1fr); }
+  .statusBody { justify-content: center; gap: 35px; }
+  .statusLegend { max-width: 250px; }
+  .donut { max-width: 180px; }
+  .statusLegend li { font-size: 12px; }
+  .salesChart { max-height: 250px; }
+  .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .action { min-height: 55px; gap: 10px; }
+  .actionCopy strong { font-size: 12px; }
+  .actionCopy > span { font-size: 10px; }
+  .actionIcon { width: 43px; height: 43px; }
+  .actionChevron { display: block; }
+  .performanceList { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .dashboard { padding: 12px; }
+  .hero { min-height: 163px; padding: 20px 17px; background-position: 54% center; }
+  .hero::before { background: linear-gradient(90deg, rgba(11, 16, 38, .9), rgba(14, 21, 45, .7) 65%, rgba(13, 19, 42, .12)); }
+  .heroCopy { max-width: 100%; }
+  .hero h1 { font-size: clamp(25px, 6.2vw, 32px); letter-spacing: -.6px; }
+  .heroSubtitle { max-width: 265px; font-size: 11px; }
+  .eyebrow { font-size: 9px; margin-bottom: 10px; }
+  .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; }
+  .statCard { grid-column: auto; grid-row: auto; padding: 12px 10px; min-height: 96px; gap: 11px; }
+  .statCard h2 { font-size: 10px; }
+  .statReadout { gap: 5.6px; }
+  .statSparkline { right: 10px; width: 20%; height: 22px; }
+  .moneyCard, .moneyCard:last-child { grid-column: 1 / -1; grid-row: auto; min-height: 114px; padding: 13px 15px; }
+  .moneyCard .statIcon { width: 40px; height: 41px; }
+  .moneyCard h2 { font-size: 11px; }
+  .moneyValue { font-size: 27px; }
+  .moneyFooter { margin-top: 6px; }
+  .moneyFooter > .metricChange { font-size: 10px; }
+  .miniSeries { height: 26px; width: 100px; }
+  .panel { padding: 13px 12px; }
+  .panelHeader h2 { font-size: 13px; }
+  .panelHeader p { font-size: 10px; }
+  .periodSelect { max-width: 120px; font-size: 9px; padding-left: 7px; padding-right: 16px; }
+  .statusBody { gap: 12px; min-height: 172px; }
+  .donut { max-width: 155px; width: 44%; }
+  .statusLegend { gap: 14px; }
+  .statusLegend li { font-size: 10px; gap: 5px; grid-template-columns: 10px minmax(0, 1fr) auto auto; }
+  .statusLegend strong, .statusPercent { font-size: 9px; }
+  .statusDot { width: 10px; height: 10px; }
+  .salesPanel { padding-left: 8px; padding-right: 8px; }
+  .salesPanel .panelHeader { padding: 0 4px; }
+  .salesChart { min-height: 146px; }
+  .chartLegend { padding-right: 6px; font-size: 9px; gap: 15px; }
+  .actions { grid-template-columns: minmax(0, 1fr); }
+  .action { min-height: 54px; }
+  .actionChevron { margin-right: 3px; }
+  .recentPanel { padding: 12px 7px 7px; }
+  .dashboard .recentTable th, .dashboard .recentTable td { font-size: 10px; padding: 9px; }
+  .performanceList > li { grid-template-columns: minmax(0, 1.2fr) minmax(80px, 1fr) minmax(65px, .8fr); gap: 6px; }
+  .performanceCompany { font-size: 8px; gap: 5px; }
+  .companyIcon { width: 26px; height: 30px; }
+  .performanceSale strong, .performanceTax strong { font-size: 10px; }
+  .performanceSale > span, .performanceTax > span { font-size: 7px; }
+  .error { align-items: flex-start; padding: 12px; gap: 10px; }
+  .error strong, .error span { font-size: 10px; }
+  .error button { padding: 7px 8px; font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.5s; } .action { transition: none; } }
+
+/* Keep record history inside its card instead of extending the overview. */
+.recentPanel .tableScroll {
+  max-height: 138px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.recentPanel .tableScroll:focus-visible {
+  outline: 2px solid #bba0ff;
+  outline-offset: 2px;
+}
+.dashboard .recentTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #252d4d;
+}
+
+/* A desktop overview uses the available screen; narrow screens stay stacked. */
+@media (min-width: 1100px) and (min-height: 600px) {
+  .dashboard {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: calc(100dvh - var(--topbar-height, 56px));
+    min-height: 0;
+    padding: 12px 18px;
+  }
+  .hero {
+    flex: 0 0 clamp(88px, 14vh, 142px);
+    min-height: 0;
+    margin-bottom: 0;
+    padding: 14px 22px;
+  }
+  .hero h1 { font-size: clamp(26px, 2.4vw, 40px); }
+  .heroTagline { font-size: 13px; }
+  .contentGrid {
+    --summary-row-height: clamp(124px, 19vh, 188px);
+    --row-gap: 10px;
+    --report-rows-height: calc(100% - var(--summary-row-height) - 2 * var(--row-gap));
+    --analytics-base-height: min(calc(var(--report-rows-height) * .6), calc(var(--report-rows-height) - 172px));
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    /* Transfer 10% of the middle row to the lower cards within the same viewport. */
+    grid-template-rows: var(--summary-row-height) minmax(0, calc(var(--analytics-base-height) * .9)) minmax(0, 1fr);
+    gap: var(--row-gap);
+  }
+  .statsGrid {
+    min-height: 0;
+    grid-template-columns: repeat(4, minmax(0, 1.1fr)) repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  .statCard { min-height: 0; padding: 9px; gap: 10px; }
+  .statIcon { width: 34px; height: 34px; }
+  .statIcon svg { width: 22px; height: 22px; }
+  .statCard h2 { font-size: 10px; margin-bottom: 3px; }
+  .statValue { font-size: clamp(18px, 1.5vw, 25px); }
+  .statReadout { gap: 3px; }
+  .metricChange { font-size: 8px; }
+  .metricChange svg { width: 9px; height: 9px; }
+  .statSparkline { right: 10px; bottom: 9px; height: 23px; }
+  .moneyCard {
+    display: flex;
+    flex-direction: column;
+    grid-column: 5;
+    grid-row: 1 / 3;
+    padding: 10px 12px;
+    gap: 0;
+  }
+  .moneyCard:last-child { grid-column: 6; }
+  .moneyCard .statIcon { grid-row: auto; }
+  .moneyCard h2 { margin: 8px 0 6px; }
+  .moneyValue { font-size: clamp(17px, 1.6vw, 27px); }
+  .moneyFooter { position: absolute; left: 12px; right: 12px; bottom: 10px; width: auto; margin: 0; padding: 0; }
+  .miniSeries { width: 85px; height: 25px; }
+  .analyticsGrid {
+    min-height: 0;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr);
+    align-items: stretch;
+    gap: 10px;
+    margin: 0;
+  }
+  .detailGrid {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+    margin: 0;
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 11px 12px;
+  }
+  .panelHeader { flex-shrink: 0; }
+  .panelHeader h2 { font-size: 13px; }
+  .panelHeader p { font-size: 10px; }
+  .periodSelect { max-width: 125px; font-size: 9px; min-height: 29px; }
+  .statusPanel, .salesPanel { height: auto; align-self: stretch; }
+  .statusBody { flex: 1; min-height: 0; padding-top: 8px; gap: 10px; }
+  .donut { flex: 0 1 44%; width: 44%; min-width: 0; height: 100%; max-width: 190px; }
+  .statusLegend { gap: clamp(6px, 1.4vh, 14px); }
+  .statusLegend li, .statusLegend strong { font-size: 10px; }
+  .statusLegend li { gap: 5px; }
+  .statusPercent { font-size: 9px; }
+  .chartLegend, .salesPanel .chartLegend { flex-shrink: 0; margin: 6px 0 0; }
+  .salesChart, .salesPanel .salesChart { flex: 1; height: 0; min-height: 0; max-height: none; margin: 0; }
+  .quickPanel { grid-column: auto; }
+  .actions { display: flex; flex: 1; min-height: 0; gap: 6px; margin-top: 8px; }
+  .action { flex: 1; min-height: 0; gap: 8px; padding: 3px 6px 3px 0; }
+  .actionIcon { flex-shrink: 0; width: clamp(27px, 3.8vh, 40px); height: clamp(27px, 3.8vh, 40px); }
+  .actionIcon svg { width: 21px; height: 21px; }
+  .actionCopy strong { font-size: 10px; }
+  .actionCopy > span { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .actionChevron { display: block; width: 13px; height: 13px; }
+  .recentPanel, .performancePanel { margin: 0; }
+  .recentPanel .panelHeader { padding-bottom: 8px; }
+  .recentPanel .tableScroll { flex: 1; min-height: 0; max-height: 130px; }
+  .dashboard .recentTable th { font-size: 9px; padding: 6px 8px; }
+  .dashboard .recentTable td { font-size: 9px; padding: 3px 8px; }
+  .dashboard .recentTable tbody tr { height: 30px; }
+  .performanceList {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #4a567c transparent;
+  }
+  .performanceList > li { flex-shrink: 0; }
+  .empty { flex: 1; min-height: 0; padding: 10px; }
+  .empty > svg { flex-shrink: 0; }
+  .loading { flex: 1; min-height: 0; }
+  .error { flex-shrink: 0; max-height: 76px; overflow: auto; margin: 0; }
+  .refreshing {
+    position: absolute;
+    z-index: 2;
+    top: 16px;
+    right: 24px;
+    padding: 4px 8px;
+    margin: 0;
+    border-radius: 5px;
+    background: #19203c;
+  }
+}
+
+@media (min-width: 1100px) and (min-height: 600px) and (max-height: 740px) {
+  .dashboard { gap: 8px; padding: 10px 14px; }
+  .hero { padding-block: 10px; }
+  .hero h1 { font-size: 27px; margin-bottom: 5px; }
+  .heroSubtitle { font-size: 11px; }
+  .heroTagline { font-size: 11px; padding-top: 0; }
+  .heroTagline > span { margin-top: 6px; }
+  .eyebrow { font-size: 9px; margin-bottom: 5px; }
+  .contentGrid { --row-gap: 8px; }
+  .analyticsGrid, .detailGrid { gap: 8px; }
+  .panel { padding: 8px 10px; }
+  .panelHeader h2 { font-size: 11px; }
+  .panelHeader p { font-size: 9px; }
+  .periodSelect { min-height: 25px; max-width: 110px; font-size: 8px; }
+  .statIcon { width: 28px; height: 28px; }
+  .statCard { gap: 7px; padding: 7px; }
+  .statCard h2 { font-size: 9px; }
+  .metricChange { font-size: 7px; }
+  .moneyValue { font-size: 18px; }
+  .moneyCard { padding: 8px 10px; }
+  .moneyFooter > .metricChange { font-size: 8px; }
+  .miniSeries { height: 20px; width: 70px; }
+  .statusLegend li, .statusLegend strong { font-size: 9px; }
+  .statusPercent { font-size: 8px; }
+  .statusDot { width: 10px; height: 10px; }
+  .actionIcon { width: 26px; height: 26px; }
+  .actionCopy strong { font-size: 9px; }
+  .actionCopy > span { font-size: 8px; }
+  .recentPanel .tableScroll { max-height: 105px; }
+  .dashboard .recentTable th { font-size: 8px; line-height: 1.2; padding: 4px 6px; }
+  .dashboard .recentTable td { font-size: 8.5px; line-height: 1.2; }
+  .performanceList { margin-top: 6px; gap: 6px; }
+  .performanceList > li { padding: 5px; }
+  .performanceSale strong, .performanceTax strong { font-size: 10px; }
+  .performanceCompany { font-size: 8px; }
+}
+
+@media (min-width: 1100px) and (min-height: 600px) and (max-height: 660px) {
+  .hero { flex-basis: 72px; }
+  .eyebrow { display: none; }
+  .hero h1 { font-size: 25px; }
+  .contentGrid {
+    --summary-row-height: 108px;
+    --analytics-base-height: calc(var(--report-rows-height) - 150px);
+  }
+  .statCard { padding: 6px; }
+  .statCard h2 { margin-bottom: 3px; }
+  .statValue { font-size: 17px; }
+  .statCard:not(.moneyCard) .statReadout { flex-direction: row; align-items: baseline; gap: 4px; }
+  .statSparkline { right: 7px; bottom: 7px; width: 22%; height: 17px; }
+  .moneyCard { padding: 6px 9px; }
+  .moneyCard h2 { font-size: 8px; margin: 5px 0 4px; }
+  .moneyCard .statIcon { width: 24px; height: 24px; }
+  .moneyValue { font-size: clamp(14px, 1.25vw, 18px); }
+  .moneyFooter { left: 9px; right: 9px; bottom: 6px; }
+  .miniSeries { height: 17px; }
+  .action { padding-block: 2px; }
+  .actionCopy { gap: 2px; }
+  .actionIcon { width: 24px; height: 24px; }
+}
+
+@media (min-width: 1400px) and (min-height: 850px) {
+  .statIcon { width: 40px; height: 40px; }
+  .statIcon svg { width: 25px; height: 25px; }
+  .statCard h2 { font-size: 11px; }
+  .statReadout { gap: 5px; }
+  .metricChange { font-size: 10px; }
+  .metricChange svg { width: 11px; height: 11px; }
+}

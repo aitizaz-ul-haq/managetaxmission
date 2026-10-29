@@ -1,0 +1,57 @@
+.navLink:focus-visible,
+.userSection button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
+}
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    min-height: 0;
+    overflow-y: visible;
+  }
+
+  .logo {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+  }
+
+  .logo img {
+    width: 120px;
+  }
+
+  .navList {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0.4rem;
+    gap: 0.25rem;
+  }
+
+  .navLink {
+    padding: 0.6rem;
+    text-align: center;
+    border-radius: var(--radius-sm);
+  }
+
+  .userSection {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+  }
+
+  .identity {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .identity p:last-child {
+    margin-bottom: 0;
+  }
+
+  .userSection button {
+    width: auto;
+  }
+}

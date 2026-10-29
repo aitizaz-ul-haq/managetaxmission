@@ -1,15 +1,17 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import PortalFilterBar from '../../../components/portal/PortalFilterBar';
 
 const backdropStyle = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   zIndex: 1000,
+  padding: '16px',
 };
 const modalStyle = {
-  background: '#fff', borderRadius: '8px', padding: '2rem',
+  background: 'var(--color-surface)', borderRadius: '12px', padding: '1.5rem',
   width: '100%', maxWidth: '480px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-  position: 'relative',
+  position: 'relative', maxHeight: '90dvh', overflowY: 'auto',
 };
 const fieldRow = { marginBottom: '1rem' };
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '4px', color: 'var(--color-muted)' };
@@ -30,6 +32,11 @@ export default function InvoiceItemsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [draftSearch, setDraftSearch] = useState('');
+  const [draftType, setDraftType] = useState('all');
+  const filteredItems = items.filter((item) => (typeFilter === 'all' || item.type === typeFilter) && [item.itemDescription, item.registrationNo, item.productDescription, item.buyerAddress].join(' ').toLowerCase().includes(search.trim().toLowerCase()));
 
   // Modal state
   const [modalItem, setModalItem] = useState(null);   // item object
@@ -261,14 +268,19 @@ export default function InvoiceItemsPage() {
       </div>
 
       {/* Items list */}
+      <PortalFilterBar label="Filter saved invoice items" onSubmit={(event) => { event.preventDefault(); setSearch(draftSearch); setTypeFilter(draftType); }}>
+        <label htmlFor="invoice-item-search">Search saved items<input id="invoice-item-search" className="input" type="search" autoComplete="off" value={draftSearch} onChange={(event) => setDraftSearch(event.target.value)} placeholder="Search by name, registration number, or description…" /></label>
+        <label htmlFor="invoice-item-type">Buyer type<select id="invoice-item-type" className="select" value={draftType} onChange={(event) => setDraftType(event.target.value)}><option value="all">All types</option>{TYPE_OPTIONS.map((type) => <option key={type}>{type}</option>)}</select></label>
+        <button type="submit" className="button button-primary">Filter</button>
+      </PortalFilterBar>
       <div className="form-card">
         <h3 className="form-section-title">Saved Items</h3>
         {loading ? (
           <div className="loading-spinner"><p>Loading…</p></div>
-        ) : items.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="table-empty">
-            <h3>No items yet</h3>
-            <p>Add your first invoice item above.</p>
+            <h3>{items.length ? 'No matching items' : 'No items yet'}</h3>
+            <p>{items.length ? 'Try another search or buyer type.' : 'Add your first invoice item above.'}</p>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -288,7 +300,7 @@ export default function InvoiceItemsPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, i) => (
+                {filteredItems.map((item, i) => (
                   <tr key={item._id}>
                     <td>{i + 1}</td>
                     <td><strong>{item.itemDescription}</strong></td>
@@ -317,7 +329,7 @@ export default function InvoiceItemsPage() {
       {/* Modal */}
       {modalItem && (
         <div style={backdropStyle} onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-          <div style={modalStyle}>
+          <div className="modal" style={modalStyle} role="dialog" aria-modal="true" aria-label={modalMode === 'view' ? 'Invoice item details' : 'Edit invoice item'}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem' }}>

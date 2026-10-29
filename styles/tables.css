@@ -76,7 +76,7 @@ tbody tr:last-child {
 }
 
 tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-table-hover, #263354);
 }
 
 tbody td {
